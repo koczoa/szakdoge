@@ -3,16 +3,16 @@ package model;
 /**
  * Class to represent the in-simulation coordinates of Units, Fields, ControlPoints
  */
-public final class Vector {
+public final class Position {
 	private final int x;
 	private final int y;
 
-	public Vector(int x, int y) {
+	public Position(int x, int y) {
 		this.x = x;
 		this.y = y;
 	}
 
-	public Vector(Vector v) {
+	public Position(Position v) {
 		this.x = v.x;
 		this.y = v.y;
 	}
@@ -37,12 +37,18 @@ public final class Vector {
 
 	@Override
 	public boolean equals(Object obj) {
-		if(obj instanceof Vector v) {
+		if(obj instanceof Position v) {
 			return this.x == v.x && this.y == v.y;
 		}
 		return false;
 	}
 
-	//TODO: function to return the coords to coords that are representable on the screen
 	//TODO: https://github.com/koczoa/szakdoge/issues/1
+	public boolean inDistance(Position p, float rov) {
+		return Math.pow(this.x - p.x(), 2) + Math.pow(this.y - p.y(), 2) <= Math.pow((rov + 0.5f), 2);
+	}
+
+	public boolean isNeighbouring(Position p) {
+		return (Math.abs(this.x - p.x) <= 1 && Math.abs(this.y - p.y) <= 1);
+	}
 }
