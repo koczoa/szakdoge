@@ -214,7 +214,7 @@ public class Unit {
 	}
 
 	public PerceivedUnit getPerception() {
-		return new PerceivedUnit(field.pos().toString(), team.getName(), type.toString(), id, health);
+		return new PerceivedUnit(field.pos(), team.getName(), type.toString(), id, health);
 	}
 
 	public int actionPoints() {
@@ -240,16 +240,26 @@ public class Unit {
 		response.put("id", id);
 		response.put("type", type);
 		response.put("currentField", field.toJSON());
-
-		JSONObject seenFieldsJson = new JSONObject();
+		//TODO: clean up this three for loop
+		JSONArray seenFieldsJson = new JSONArray();
 		for(var sf : seenFields) {
-			seenFieldsJson.add(sf.toJSON());
+			seenFieldsJson.put(sf.toJSON());
 		}
-		response.put(seenFieldsJson);
+		response.put("seenFields", seenFieldsJson);
 
-//		response.put("seenFields", gson.toJson(seenFields));
-		response.put("seenUnits", gson.toJson(seenUnits));
-		response.put("seenControlPoints", gson.toJson(seenControlPoints));
+		JSONArray seenUnitsJson = new JSONArray();
+		for(var sf : seenUnits) {
+			seenUnitsJson.put(sf.toJSON());
+		}
+		response.put("seenUnits", seenUnitsJson);
+
+		JSONArray seenControlPointsJson = new JSONArray();
+		for(var sf : seenControlPoints) {
+			seenControlPointsJson.put(sf.toJSON());
+		}
+		response.put("seenControlPoints", seenControlPointsJson);
+
+//
 
 
 		response.put("health", health);

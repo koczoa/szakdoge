@@ -1,6 +1,7 @@
 package model;
 
 import common.ControlPointListener;
+import org.json.JSONObject;
 import util.Color;
 
 import java.util.HashMap;
@@ -122,4 +123,9 @@ public class ControlPoint {
 	public String toString() {
 		return this.pos.toString() + " " + this.percentage + " " + this.size + " " + this.id;
 	}
+
+	public JSONObject toJSON() {
+		return new JSONObject().put("id", this.id).put("pos", this.pos.toJSON()).put("size", this.size).put("percentage", this.percentage);
+	}
+
 }
