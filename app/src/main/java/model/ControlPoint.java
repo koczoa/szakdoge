@@ -12,13 +12,13 @@ public class ControlPoint {
 	private final Position pos;
 	private final int size;
 	private final int percentage;
-	private ControlPointListener listener;
-	private Team controlTeam;
-	private Team prevControlTeam;
-	private int controlLenght;
-	private final MainModel mm;
-	private final int id;
-	private static int idCounter = 0;
+	private transient ControlPointListener listener;
+	private transient Team controlTeam;
+	private transient Team prevControlTeam;
+	private transient int controlLength;
+	private final transient MainModel mm;
+	private final transient int id;
+	private static transient int idCounter = 0;
 
 	public ControlPoint(Position p, int percentage, int size, MainModel mm) {
 		pos = p;
@@ -50,16 +50,16 @@ public class ControlPoint {
 				max = entry.getValue();
 				controlTeam = entry.getKey();
 				if (prevControlTeam == controlTeam) {
-					controlLenght++;
+					controlLength++;
 				} else {
 					prevControlTeam = controlTeam;
-					controlLenght = 1;
+					controlLength = 1;
 				}
 			}
 			if (entry.getValue() == max && entry.getKey() != controlTeam) {
 				twoTeams = true;
 				prevControlTeam = null;
-				controlLenght = 0;
+				controlLength = 0;
 
 			}
 		}
@@ -99,8 +99,8 @@ public class ControlPoint {
 		}
 	}
 
-	public int getControlLenght() {
-		return controlLenght;
+	public int getControlLength() {
+		return controlLength;
 	}
 
 	public Position pos() {

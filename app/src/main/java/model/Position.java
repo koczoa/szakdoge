@@ -1,5 +1,8 @@
 package model;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 /**
  * Class to represent the in-simulation coordinates of Units, Fields, ControlPoints
  */
@@ -30,6 +33,13 @@ public final class Position {
 		return "x: " + x + " y: " + y;
 	}
 
+	public JSONObject toJSON() {
+		JSONObject response = new JSONObject();
+		response.put("x", x);
+		response.put("y", y);
+		return response;
+	}
+
 	@Override
 	public int hashCode() {
 		return Integer.hashCode(Integer.hashCode(x*100) + y);
@@ -43,7 +53,6 @@ public final class Position {
 		return false;
 	}
 
-	//TODO: https://github.com/koczoa/szakdoge/issues/1
 	public boolean inDistance(Position p, float rov) {
 		return Math.pow(this.x - p.x(), 2) + Math.pow(this.y - p.y(), 2) <= Math.pow((rov + 0.5f), 2);
 	}

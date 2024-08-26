@@ -1,5 +1,7 @@
 package model;
 
+import org.json.JSONObject;
+
 public final class PerceivedUnit {
 	private final String pos;
 	private final String team;
@@ -18,5 +20,9 @@ public final class PerceivedUnit {
 	@Override
 	public String toString() {
 		return pos + " " + team + " " + type + " " + id + " " + health;
+	}
+
+	public JSONObject toJSON() {
+		return new JSONObject().put("pos", pos).put("team", team).put("type", type).put("id", id).put("health", health);
 	}
 }

@@ -43,10 +43,10 @@ public class Communicator {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		outputStream = process.getOutputStream();
-		inputStream = process.getInputStream();
-		// outputStream = System.out;
-		// inputStream = System.in;
+//		outputStream = process.getOutputStream();
+//		inputStream = process.getInputStream();
+		 outputStream = System.out;
+		 inputStream = System.in;
 		sc = new Scanner(inputStream);
 		out = new PrintWriter(new OutputStreamWriter(outputStream), true);
 		BufferedReader erroReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
@@ -110,7 +110,7 @@ public class Communicator {
 			if (!simuEnded) {
 				out.println("commPhase");
 				out.println(team.units().size());
-				out.println(team.teamMembersToString(false).toString());
+				out.println(team.teamMembersToString().toString());
 			} else {
 				out.println("endPhase");
 				out.println(team.getName() + " " + weWon);

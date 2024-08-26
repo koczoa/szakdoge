@@ -1,5 +1,7 @@
 package model;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import util.Color;
 
 import java.util.ArrayList;
@@ -119,9 +121,9 @@ public final class Team {
 		}
 	}
 
-	public List<String> teamMembersToString(boolean toMonitor) {
-		var res = new ArrayList<String>();
-		units.forEach((id, u) -> res.add(u.toString(toMonitor)));
+	public List<JSONObject> teamMembersToString() {
+		var res = new ArrayList<JSONObject>();
+		units.forEach((id, u) -> res.add(u.toJSON()));
 		return res;
 	}
 

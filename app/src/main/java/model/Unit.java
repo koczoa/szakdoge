@@ -1,7 +1,13 @@
 package model;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import common.UnitListener;
+import logger.Label;
+import logger.Log;
 import util.Color;
+
+import org.json.*;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -9,7 +15,7 @@ import java.util.List;
 import java.util.Scanner;
 
 public class Unit {
-	private static final Path descriptorDir = Path.of("assets", "descriptors");
+	private static final Path descriptorDir = Path.of("app", "src/main/resources/descriptors");
 
 	private final int id;
 	private Field field;
@@ -35,13 +41,14 @@ public class Unit {
 	private int maxActionPoints;
 	private int actionPoints;
 	private final Position startingPos;
+	private final Label javaLogLabel;
 
 	private static int idCounter = 0;
 
 	public enum Type {
-		SCOUT("SCOUT.txt"),
-		TANK("TANK.txt"),
-		INFANTRY("INFANTRY.txt");
+		SCOUT("SCOUT"),
+		TANK("TANK"),
+		INFANTRY("INFANTRY");
 
 		public final Path path;
 
@@ -55,8 +62,7 @@ public class Unit {
 		seenUnits = new ArrayList<>();
 		steppableTypes = new ArrayList<>();
 		id = idCounter++;
-		this.field = f;
-		field.arrive(this);
+		setField(f);
 		this.team = team;
 		team.addUnit(this);
 		this.type = type;
@@ -71,10 +77,7 @@ public class Unit {
 			consumption = Integer.parseInt(sc.nextLine());
 			maxActionPoints = Integer.parseInt(sc.nextLine());
 			price = Integer.parseInt(sc.nextLine());
-			int dummy = Integer.parseInt(sc.nextLine());
-			while (sc.hasNextLine()) {
-				steppableTypes.add(Field.Type.valueOf(sc.nextLine()));
-			}
+			steppableTypes.add(Field.Type.valueOf(sc.nextLine()));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -82,23 +85,28 @@ public class Unit {
 		ammo = maxAmmo;
 		fuel = maxFuel;
 		actionPoints = maxActionPoints;
+		javaLogLabel = new Label(
+				team.getName() + " javaUnit",
+				Label.Color.BLACK,
+				team.getName().equals("red") ? Label.Color.RED : Label.Color.WHITE
+		);
 	}
 
 	public void move(Field dest) {
 		if (actionPoints <= 0) {
-			throw new RuntimeException("move out of actionPoints: " + this.actionPoints + " id: " + this.id);
+			Log.e(javaLogLabel,this.id + "id: out of actionPoints");
 		}
 		if (fuel < consumption) {
-			throw new RuntimeException("move out of fuel: " + this.fuel + " id: " + this.id);
+			Log.e(javaLogLabel,this.id + "id: out of fuel");
 		}
 		if (!field.isNeighbouring(dest)) {
-			throw new RuntimeException("move is not neighbouring id: " + this.id + " dest: " + dest  + " curr: " + this.field.pos().toString());
+			Log.e(javaLogLabel,this.id + "id: move not neighbouring: curr: " + this.field.pos().toString() + ", dest: " + dest);
 		}
 		if (!steppableTypes.contains(dest.type())) {
-			throw new RuntimeException("move is not steppable id: " + this.id);
+			Log.e(javaLogLabel,this.id + "id: dest not steppable");
 		}
 		if (!dest.arrive(this)) {
-			throw new RuntimeException("move cannot arrive id: " + this.id);
+			Log.e(javaLogLabel,this.id + "id: dest occupied");
 		}
 		if (dest == field) {
 			return;
@@ -111,13 +119,13 @@ public class Unit {
 
 	public void shoot(Field target) {
 		if (actionPoints <= 0) {
-			throw new RuntimeException("shoot out of actionPoints: " + this.actionPoints + " id: " + this.id);
+			Log.e(javaLogLabel,this.id + "id: out of actionPoints");
 		}
 		if (ammo <= 0) {
-			throw new RuntimeException("shoot out of ammo: " + this.ammo + " id: " + this.id);
+			Log.e(javaLogLabel,this.id + "id: out of ammo");
 		}
 		if (!field.inDistance(target, shootRange + 0.5f)) {
-			throw new RuntimeException("shoot is not in dist: " + this.id);
+			Log.e(javaLogLabel,this.id + "id: out of range");
 		}
 
 		target.takeShot(damage);
@@ -217,26 +225,40 @@ public class Unit {
 		return startingPos;
 	}
 
-	public String toString(boolean toMonitor) {
-		if (toMonitor) {
-			return "ID: " + id + "\n"
-					+ "Type: " + type.toString() + "\n"
-					+ "Pos: " + field.pos().toString() + "\n"
-					+ "Health: " + health + "/" + maxHealth + "\n"
-					+ "Ammo: " + ammo + "/" + maxAmmo + "\n"
-					+ "Fuel: " + fuel + "/" + maxFuel + "\n";
+	public String toString() {
+		return "ID: " + id + "\n"
+				+ "Type: " + type.toString() + "\n"
+				+ "Pos: " + field.pos().toString() + "\n"
+				+ "Health: " + health + "/" + maxHealth + "\n"
+				+ "Ammo: " + ammo + "/" + maxAmmo + "\n"
+				+ "Fuel: " + fuel + "/" + maxFuel + "\n";
+	}
+	public JSONObject toJSON() {
+		GsonBuilder gsonBuilder = new GsonBuilder();
+		Gson gson = gsonBuilder.serializeNulls().create();
+		JSONObject response = new JSONObject();
+		response.put("id", id);
+		response.put("type", type);
+		response.put("currentField", field.toJSON());
+
+		JSONObject seenFieldsJson = new JSONObject();
+		for(var sf : seenFields) {
+			seenFieldsJson.add(sf.toJSON());
 		}
-		return "\n" + id + "\n"
-				+ type.toString() + "\n"
-				+ field.pos().toString() + " " + field.type().toString() + "\n"
-				+ seenFields.toString() + "\n"
-				+ seenUnits.toString() + "\n"
-				+ seenControlPoints.toString() + "\n"
-				+ health + "\n"
-				+ ammo + "\n"
-				+ fuel + "\n"
-				+ actionPoints + "\n"
-				+ team.getName() + "\n";
+		response.put(seenFieldsJson);
+
+//		response.put("seenFields", gson.toJson(seenFields));
+		response.put("seenUnits", gson.toJson(seenUnits));
+		response.put("seenControlPoints", gson.toJson(seenControlPoints));
+
+
+		response.put("health", health);
+		response.put("ammo", ammo);
+		response.put("fuel", fuel);
+		response.put("actionPoints", actionPoints);
+		response.put("teamName", team.getName());
+
+		return response;
 	}
 
 	public void reset(Field f) {
@@ -251,7 +273,9 @@ public class Unit {
 	}
 
 	public void setField(Field f) {
-		this.field.leave();
+		if(this.field != null) {
+			this.field.leave();
+		}
 		f.arrive(this);
 		this.field = f;
 	}

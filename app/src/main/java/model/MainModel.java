@@ -36,6 +36,7 @@ public class MainModel {
 	}
 
 	public void placeDefaultUnits() {
+		//TODO: rework this
 		new Unit(fields.get(new Position(38, 20)), teams.get("white"), Unit.Type.SCOUT);
 		new Unit(fields.get(new Position(0, 0)), teams.get("red"), Unit.Type.TANK);
 		new Unit(fields.get(new Position(40, 40)), teams.get("red"), Unit.Type.SCOUT);
@@ -48,6 +49,7 @@ public class MainModel {
 	}
 
 	public void placeDefaultControlPoints() {
+		//TODO: rework this
 		controlPoints.add(new ControlPoint(new Position(40, 50), 10, 3, this));
 		controlPoints.add(new ControlPoint(new Position(15, 15), 10, 4, this));
 	}

@@ -1,10 +1,12 @@
 package model;
 
 
+import org.json.JSONObject;
+
 public final class Field {
-	private Position pos;
-	private Type type;
-	private Unit unit;
+	private final Position pos;
+	private final Type type;
+	private transient Unit unit;
 
 	public enum Type {
 		GRASS,
@@ -49,19 +51,15 @@ public final class Field {
 		return this.pos.toString() + " " + this.type.toString();
 	}
 
+	public JSONObject toJSON() {
+		return new JSONObject().put("pos", this.pos.toJSON()).put("type", this.type);
+	}
+
 	public Field.Type type() {
 		return type;
 	}
 
 	public Position pos() {
 		return pos;
-	}
-
-	public Unit unit() {
-		return unit;
-	}
-
-	public void setPos(Position p) {
-		this.pos = p;
 	}
 }
