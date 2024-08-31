@@ -1,7 +1,6 @@
 package model;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+
 import common.UnitListener;
 import logger.Label;
 import logger.Log;
@@ -234,8 +233,6 @@ public class Unit {
 				+ "Fuel: " + fuel + "/" + maxFuel + "\n";
 	}
 	public JSONObject toJSON() {
-		GsonBuilder gsonBuilder = new GsonBuilder();
-		Gson gson = gsonBuilder.serializeNulls().create();
 		JSONObject response = new JSONObject();
 		response.put("id", id);
 		response.put("type", type);
