@@ -20,13 +20,14 @@ public class MainModel {
 	private final ArrayList<ControlPoint> controlPoints;
 	private final List<MainModelListener> listeners;
 	private MainModelCommunicatorListener mainModelCommunicatorListener;
-
+	private static final String WHITE = "white";
+	private static final String RED = "red";
 	public MainModel(int size, MapGeneratorStrategy mapGeneratorStrategy) {
 		mapSize = size;
 		controlPoints = new ArrayList<>();
 		teams = new HashMap<>();
-		teams.put("white", new Team("white", "sarlMove", 5000, this));
-		teams.put("red", new Team("red", "dummy", 5000, this));
+		teams.put(WHITE, new Team(WHITE, "sarlMove", 5000, this));
+		teams.put(RED, new Team(RED, "dummy", 5000, this));
 		listeners = new ArrayList<>();
 		fields = mapGeneratorStrategy.generateMap(size);
 	}
@@ -37,15 +38,15 @@ public class MainModel {
 
 	public void placeDefaultUnits() {
 		//TODO: rework this
-		new Unit(fields.get(new Position(38, 20)), teams.get("white"), Unit.Type.SCOUT);
-		new Unit(fields.get(new Position(0, 0)), teams.get("red"), Unit.Type.TANK);
-		new Unit(fields.get(new Position(40, 40)), teams.get("red"), Unit.Type.SCOUT);
-		new Unit(fields.get(new Position(5, 5)), teams.get("red"), Unit.Type.TANK);
-		new Unit(fields.get(new Position(7, 3)), teams.get("red"), Unit.Type.TANK);
-		new Unit(fields.get(new Position(38, 25)), teams.get("red"), Unit.Type.TANK);
-		new Unit(fields.get(new Position(37, 20)), teams.get("white"), Unit.Type.TANK);
-		new Unit(fields.get(new Position(38, 21)), teams.get("white"), Unit.Type.TANK);
-		new Unit(fields.get(new Position(38, 22)), teams.get("white"), Unit.Type.INFANTRY);
+		new Unit(fields.get(new Position(38, 20)), teams.get(WHITE), Unit.Type.SCOUT);
+		new Unit(fields.get(new Position(0, 0)), teams.get(RED), Unit.Type.TANK);
+		new Unit(fields.get(new Position(40, 40)), teams.get(RED), Unit.Type.SCOUT);
+		new Unit(fields.get(new Position(5, 5)), teams.get(RED), Unit.Type.TANK);
+		new Unit(fields.get(new Position(7, 3)), teams.get(RED), Unit.Type.TANK);
+		new Unit(fields.get(new Position(38, 25)), teams.get(RED), Unit.Type.TANK);
+		new Unit(fields.get(new Position(37, 20)), teams.get(WHITE), Unit.Type.TANK);
+		new Unit(fields.get(new Position(38, 21)), teams.get(WHITE), Unit.Type.TANK);
+		new Unit(fields.get(new Position(38, 22)), teams.get(WHITE), Unit.Type.INFANTRY);
 	}
 
 	public void placeDefaultControlPoints() {

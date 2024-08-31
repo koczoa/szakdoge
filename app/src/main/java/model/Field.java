@@ -1,12 +1,11 @@
 package model;
 
-
 import org.json.JSONObject;
 
 public final class Field {
 	private final Position pos;
 	private final Type type;
-	private transient Unit unit;
+	private Unit unit;
 
 	public enum Type {
 		GRASS,

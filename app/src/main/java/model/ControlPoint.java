@@ -13,13 +13,13 @@ public class ControlPoint {
 	private final Position pos;
 	private final int size;
 	private final int percentage;
-	private transient ControlPointListener listener;
-	private transient Team controlTeam;
-	private transient Team prevControlTeam;
-	private transient int controlLength;
-	private final transient MainModel mm;
-	private final transient int id;
-	private static transient int idCounter = 0;
+	private ControlPointListener listener;
+	private Team controlTeam;
+	private Team prevControlTeam;
+	private int controlLength;
+	private final MainModel mm;
+	private final int id;
+	private static int idCounter = 0;
 
 	public ControlPoint(Position p, int percentage, int size, MainModel mm) {
 		pos = p;
@@ -70,7 +70,7 @@ public class ControlPoint {
 	private void healUnits(boolean twoTeams, List<Unit> seenUnits) {
 		if (!twoTeams && controlTeam != null) {
 			if (listener != null) {
-				listener.onColorChange(controlTeam.getColor());
+				listener.onTeamChange(controlTeam.getColor());
 			} //színállítás
 			for (var u : seenUnits) {
 				if (u.team() == controlTeam) {
@@ -94,7 +94,7 @@ public class ControlPoint {
 			//controlTeam healelése
 		} else {
 			if (listener != null) {
-				listener.onColorChange(Color.DEFAULT);
+				listener.onTeamChange(Color.DEFAULT);
 				controlTeam = null;
 			}
 		}

@@ -237,7 +237,6 @@ public class Unit {
 		response.put("id", id);
 		response.put("type", type);
 		response.put("currentField", field.toJSON());
-		//TODO: clean up this three for loop
 		JSONArray seenFieldsJson = new JSONArray();
 		for(var sf : seenFields) {
 			seenFieldsJson.put(sf.toJSON());
