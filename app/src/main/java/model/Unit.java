@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Scanner;
 
 public class Unit {
-	private static final Path descriptorDir = Path.of("app", "src/main/resources/descriptors");
+	private static final Path descriptorDir = Path.of("src", "/main/resources/descriptors");
 
 	private final int id;
 	private Field field;
@@ -66,6 +66,8 @@ public class Unit {
 		team.addUnit(this);
 		this.type = type;
 		this.startingPos = f.pos();
+		System.out.println(descriptorDir.resolve(type.path));
+		System.out.println(System.getProperty("user.dir"));
 		try (Scanner sc = new Scanner(descriptorDir.resolve(type.path))) {
 			maxHealth = Integer.parseInt(sc.nextLine());
 			viewRange = Integer.parseInt(sc.nextLine());

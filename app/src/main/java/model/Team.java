@@ -120,7 +120,7 @@ public final class Team {
 		}
 	}
 
-	public List<JSONObject> teamMembersToString() {
+	public List<JSONObject> teamMembersToJson() {
 		var res = new ArrayList<JSONObject>();
 		units.forEach((id, u) -> res.add(u.toJSON()));
 		return res;
