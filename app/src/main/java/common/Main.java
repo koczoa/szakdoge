@@ -7,14 +7,16 @@ import java.io.IOException;
 
 public class Main {
 	public static void main(String[] args) throws IOException {
-		System.out.println("Hello");
-		MainModel mm = new MainModel(60);
+		MainModel mm = new MainModel(10);
 		mm.placeDefaultUnits();
 		mm.placeDefaultControlPoints();
 		MainCommunicator mc = new MainCommunicator(mm);
 		mm.addListener(mc);
 		while (true) {
-			mc.tick();
+			var go = mc.tick();
+			if(!go) {
+				System.exit(0);
+			}
 		}
 	}
 }

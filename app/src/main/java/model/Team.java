@@ -1,13 +1,10 @@
 package model;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import util.Color;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 public final class Team {
 	private final Color color;
@@ -124,6 +121,39 @@ public final class Team {
 		var res = new ArrayList<JSONObject>();
 		units.forEach((id, u) -> res.add(u.toJSON()));
 		return res;
+	}
+
+	public JSONObject toMerge() {
+		var sumSeenFields = new HashSet<Field>();
+		var sumSeenUnits = new HashSet<PerceivedUnit>();
+		var sumSeenControlPoints = new HashSet<ControlPoint>();
+
+		for (var u : units.values()) {
+			var res = u.toMerge();
+			sumSeenFields.addAll(res.a);
+			sumSeenUnits.addAll(res.b);
+			sumSeenControlPoints.addAll(res.c);
+		}
+		var response = new JSONObject();
+
+		JSONArray seenFieldsJson = new JSONArray();
+		for(var sf : sumSeenFields) {
+			seenFieldsJson.put(sf.toJSON());
+		}
+		response.put("seenFields", seenFieldsJson);
+
+		JSONArray seenUnitsJson = new JSONArray();
+		for(var sf : sumSeenUnits) {
+			seenUnitsJson.put(sf.toJSON());
+		}
+		response.put("seenUnits", seenUnitsJson);
+
+		JSONArray seenControlPointsJson = new JSONArray();
+		for(var sf : sumSeenControlPoints) {
+			seenControlPointsJson.put(sf.toJSON());
+		}
+		response.put("seenControlPoints", seenControlPointsJson);
+		return response;
 	}
 
 	public void reset() {

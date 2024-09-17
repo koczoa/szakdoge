@@ -8,6 +8,7 @@ import org.json.JSONObject;
 
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -25,7 +26,7 @@ public class Communicator {
 
 	public Communicator(Team team, SocketChannel sc,  String strategy) throws IOException {
 		this.socketChannel = sc;
-        this.team = team;
+		this.team = team;
 		javaLogLabel = new Label(team.getName() + " java", Label.Color.BLACK,
 				team.getName().equals("red") ? Label.Color.RED : Label.Color.WHITE);
 		var setupMessagePayLoad = new JSONObject();
@@ -40,15 +41,15 @@ public class Communicator {
 
 		ByteBuffer sizeBuffer = ByteBuffer.allocate(4);
 		ByteBuffer buffer = StandardCharsets.UTF_8.encode(setupMessage.toString());
-		Log.d(javaLogLabel, "buffcap: " + buffer.capacity() + "buff: " + buffer);
 		sizeBuffer.putInt(buffer.limit());
 		sizeBuffer.position(0);
-
+//		ByteBuffer buffer = ByteBuffer.allocate(sizeBuffer.limit());
+//		buffer.put
 		socketChannel.write(sizeBuffer);
 		socketChannel.write(buffer);
 		buffer.position(0);
 		sizeBuffer.position(0);
-
+		Log.d(javaLogLabel, "buffcap: " + buffer.capacity() + " bufflim: " + buffer.limit());
 	}
 
 	public void communicate() throws IOException {
@@ -58,21 +59,24 @@ public class Communicator {
 		Log.d(javaLogLabel, "RUN:" + runCounter);
 		Log.d(javaLogLabel, "communicating");
 		var message = new JSONObject();
-		var messagePayload = team.teamMembersToJson();
+		var payload = new JSONObject();
+		var mapDescriptors = team.toMerge();
+		var unitsPayload = team.teamMembersToJson();
+		payload.put("units", unitsPayload);
+		payload.put("map", mapDescriptors);
 
 		if (!simuEnded) {
-			message.put("phase", "commPhase");
-			message.put("teamSize", team.units().size());
-			message.put("payload", messagePayload);
+			message.put("type", "commMessage");
+			message.put("payload", payload);
 		} else {
-			message.put("phase", "endPhase");
-			message.put("result", weWon);
+			message.put("type", "endMessage");
+			message.put("payload", weWon);
 			simuEnded = false;
 		}
 
 		ByteBuffer sizeBuffer = ByteBuffer.allocate(4);
 		ByteBuffer buffer = StandardCharsets.UTF_8.encode(String.valueOf(message));
-		System.out.println("buffcap: " + buffer.capacity() + "buff: " + buffer);
+		Log.d(javaLogLabel, "buffcap: " + buffer.capacity() + " buff: ");
 		sizeBuffer.putInt(buffer.limit());
 		sizeBuffer.position(0);
 
@@ -80,27 +84,16 @@ public class Communicator {
 		socketChannel.write(buffer);
 		buffer.position(0);
 		sizeBuffer.position(0);
+
+		//TODO: here comes the read-in part
 		Log.d(javaLogLabel, "END communicating");
 	}
 
-	private void unitMove(String[] split) {
-		if (split.length == 4) {
-			team.moveUnit(Integer.parseInt(split[1]),
-					new Position(Integer.parseInt(split[2]), Integer.parseInt(split[3])));
-		}
-	}
-
-	private void unitShoot(String[] split) {
-		if (split.length == 4) {
-			team.fireUnit(Integer.parseInt(split[1]),
-					new Position(Integer.parseInt(split[2]), Integer.parseInt(split[3])));
-		}
-	}
-
-	public void endSimu(boolean win) {
-		simuEnded = true;
-		weWon = win;
-	}
+	public void close() {
+        try {
+            socketChannel.close();
+        } catch (IOException e) {}
+    }
 
 	public Team getTeam() {
 		return team;

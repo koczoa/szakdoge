@@ -32,7 +32,8 @@ public class MainCommunicator implements MainModelCommunicatorListener {
 	}
 
 
-	public void tick() throws IOException {
+	public boolean tick() throws IOException {
+		System.out.println("awaiting for connections");
 		var client = server.accept();
 		if (client != null) {
 			client.configureBlocking(false);
@@ -43,13 +44,28 @@ public class MainCommunicator implements MainModelCommunicatorListener {
 				case 1:
 					communictors.add(new Communicator(mm.team(RED), client,  "dummy"));
 					break;
+				case 2:
+					break;
 				default:
 					client.close();
 			}
 		}
-		for (var comm : communictors) {
-			comm.communicate();
+		if (communictors.size() == 2) {
+			for (var comm : communictors) {
+				try {
+					comm.communicate();
+				} catch (IOException e) {
+					comm.close();
+					return false;
+				}
+			}
+        }
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
 		}
+		return true;
 	}
 
 	@Override

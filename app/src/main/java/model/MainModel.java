@@ -42,21 +42,21 @@ public class MainModel {
 
 	public void placeDefaultUnits() {
 		//TODO: rework this
-		new Unit(fields.get(new Position(38, 20)), teams.get(WHITE), Unit.Type.SCOUT);
-		new Unit(fields.get(new Position(0, 0)), teams.get(RED), Unit.Type.TANK);
-		new Unit(fields.get(new Position(40, 40)), teams.get(RED), Unit.Type.SCOUT);
+//		new Unit(fields.get(new Position(38, 20)), teams.get(WHITE), Unit.Type.SCOUT);
+		new Unit(fields.get(new Position(0, 0)), teams.get(RED), Unit.Type.SCOUT);
+//		new Unit(fields.get(new Position(40, 40)), teams.get(RED), Unit.Type.SCOUT);
 		new Unit(fields.get(new Position(5, 5)), teams.get(RED), Unit.Type.TANK);
-		new Unit(fields.get(new Position(7, 3)), teams.get(RED), Unit.Type.TANK);
-		new Unit(fields.get(new Position(38, 25)), teams.get(RED), Unit.Type.TANK);
-		new Unit(fields.get(new Position(37, 20)), teams.get(WHITE), Unit.Type.TANK);
-		new Unit(fields.get(new Position(38, 21)), teams.get(WHITE), Unit.Type.TANK);
-		new Unit(fields.get(new Position(38, 22)), teams.get(WHITE), Unit.Type.INFANTRY);
+		new Unit(fields.get(new Position(7, 3)), teams.get(WHITE), Unit.Type.TANK);
+//		new Unit(fields.get(new Position(38, 25)), teams.get(RED), Unit.Type.TANK);
+//		new Unit(fields.get(new Position(37, 20)), teams.get(WHITE), Unit.Type.TANK);
+//		new Unit(fields.get(new Position(38, 21)), teams.get(WHITE), Unit.Type.TANK);
+//		new Unit(fields.get(new Position(38, 22)), teams.get(WHITE), Unit.Type.INFANTRY);
 	}
 
 	public void placeDefaultControlPoints() {
 		//TODO: rework this
-		controlPoints.add(new ControlPoint(new Position(40, 50), 10, 3, this));
-		controlPoints.add(new ControlPoint(new Position(15, 15), 10, 4, this));
+//		controlPoints.add(new ControlPoint(new Position(40, 50), 10, 3, this));
+		controlPoints.add(new ControlPoint(new Position(1, 5), 10, 2, this));
 	}
 
 	public void addListener(MainModelListener mml) {

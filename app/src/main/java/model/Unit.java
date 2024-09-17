@@ -7,6 +7,7 @@ import logger.Log;
 import util.Color;
 
 import org.json.*;
+import util.Triplet;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -66,8 +67,6 @@ public class Unit {
 		team.addUnit(this);
 		this.type = type;
 		this.startingPos = f.pos();
-		System.out.println(descriptorDir.resolve(type.path));
-		System.out.println(System.getProperty("user.dir"));
 		try (Scanner sc = new Scanner(descriptorDir.resolve(type.path))) {
 			maxHealth = Integer.parseInt(sc.nextLine());
 			viewRange = Integer.parseInt(sc.nextLine());
@@ -239,34 +238,16 @@ public class Unit {
 		response.put("id", id);
 		response.put("type", type);
 		response.put("currentField", field.toJSON());
-		JSONArray seenFieldsJson = new JSONArray();
-		for(var sf : seenFields) {
-			seenFieldsJson.put(sf.toJSON());
-		}
-		response.put("seenFields", seenFieldsJson);
-
-		JSONArray seenUnitsJson = new JSONArray();
-		for(var sf : seenUnits) {
-			seenUnitsJson.put(sf.toJSON());
-		}
-		response.put("seenUnits", seenUnitsJson);
-
-		JSONArray seenControlPointsJson = new JSONArray();
-		for(var sf : seenControlPoints) {
-			seenControlPointsJson.put(sf.toJSON());
-		}
-		response.put("seenControlPoints", seenControlPointsJson);
-
-//
-
-
 		response.put("health", health);
 		response.put("ammo", ammo);
 		response.put("fuel", fuel);
 		response.put("actionPoints", actionPoints);
 		response.put("teamName", team.getName());
-
 		return response;
+	}
+
+	public Triplet<List<Field>, List<PerceivedUnit>, List<ControlPoint>> toMerge() {
+		return new Triplet<>(this.seenFields, this.seenUnits, this.seenControlPoints);
 	}
 
 	public void reset(Field f) {
