@@ -3,112 +3,73 @@ package communicator;
 import model.MainModel;
 import common.MainModelCommunicatorListener;
 import logger.Label;
-import logger.Log;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainCommunicator implements MainModelCommunicatorListener {
-	private boolean manualResetEvent = false;
-	private Thread commThread;
-	private Object waiter = new Object();
-	private boolean pause;
-	private List<Communicator> communictors;
-	private boolean runCommThread;
-	private Thread shutdownHook;
-
+	ServerSocketChannel server;
+	InetSocketAddress address;
+	private final List<Communicator> communictors;
 	private final Label communicationLogLabel;
+	private static final String WHITE = "white";
+	private static final String RED = "red";
+	private final MainModel mm;
 
-	public MainCommunicator(MainModel mm) {
+    public MainCommunicator(MainModel mm) throws IOException {
+		this.mm = mm;
+		server = ServerSocketChannel.open();
+		address = new InetSocketAddress("localhost", 6969);
+		server.bind(address);
+		server.configureBlocking(false);
 		communictors = new ArrayList<>();
 		communicationLogLabel = new Label("Communication", Label.Color.NONE, Label.Color.NONE);
-		var teams = mm.getTeams();
-		for (var t : teams) {
-			communictors.add(new Communicator(t, "python/test1.py", t.getStrategy()));
-		}
-		runCommThread = true;
-		commThreadStart(mm);
-		shutdownHook = new Thread(this::stop);
-		Runtime.getRuntime().addShutdownHook(shutdownHook);
+
 	}
 
-	private void commThreadStart(MainModel mm) {
-		commThread = new Thread(() -> {
-			while (runCommThread) {
-				synchronized (waiter) {
-					while (pause) {
-						try {
-							waiter.wait();
-						} catch (InterruptedException e) {
-							if (!runCommThread) {
-								return;
-							} else {
-								e.printStackTrace();
-							}
-						}
-					}
+
+	public boolean tick() throws IOException {
+		System.out.println("awaiting for connections");
+		var client = server.accept();
+		if (client != null) {
+			client.configureBlocking(false);
+			switch (communictors.size()) {
+				case 0:
+					communictors.add(new Communicator(mm.team(WHITE), client,  "dummy"));
+					break;
+				case 1:
+					communictors.add(new Communicator(mm.team(RED), client,  "dummy"));
+					break;
+				case 2:
+					break;
+				default:
+					client.close();
+			}
+		}
+		if (communictors.size() == 2) {
+			for (var comm : communictors) {
+				try {
+					comm.communicate();
+				} catch (IOException e) {
+					comm.close();
+					return false;
 				}
-				communicate(mm);
 			}
-		});
-		commThread.start();
-	}
-
-	private void communicate(MainModel mm) {
-		for (var c : communictors) {
-			c.communicate();
-			mm.controlPointsUpdate();
-			Log.d(communicationLogLabel, "--------Egy kor lement--------");
-			if (manualResetEvent) {
-				pause = true;
-			}
-		}
-	}
-
-	public void stop() {
-		synchronized (shutdownHook) {
-			if (!Runtime.getRuntime().removeShutdownHook(shutdownHook)) {
-				return;
-			}
-		}
-		runCommThread = false;
-		commThread.interrupt();
+        }
 		try {
-			commThread.join();
+			Thread.sleep(2000);
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			throw new RuntimeException(e);
 		}
-		for (var c : communictors) {
-			c.closeThread();
-		}
-	}
-
-	public void setSteppability(Boolean b) {
-		manualResetEvent = b;
-	}
-
-	public void change() {
-		synchronized (waiter) {
-			if (pause) {
-				pause = false;
-				waiter.notifyAll();
-				Log.d(communicationLogLabel, "RESUMED");
-			} else {
-				pause = true;
-				Log.d(communicationLogLabel, "PAUSED");
-			}
-		}
-		Log.d(communicationLogLabel, "paused = " + pause);
+		return true;
 	}
 
 	@Override
 	public void teamLost(String name) {
-		for (var c : communictors) {
-			if (c.getTeam().getName().equals(name)) {
-				c.endSimu(false);
-			} else {
-				c.endSimu(true);
-			}
-		}
+
 	}
 }

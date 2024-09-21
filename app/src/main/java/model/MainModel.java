@@ -3,7 +3,10 @@ package model;
 import common.*;
 import common.map_generation.MapGeneratorStrategy;
 import common.map_generation.SimplexMapGeneratorStrategy;
+import communicator.Communicator;
+import logger.Log;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -12,22 +15,23 @@ import java.util.Map;
 public class MainModel {
 	//measured in fields
 	private final int mapSize;
-
-	public int ackNumber = 1;
-
 	private final Map<String, Team> teams;
 	private final Map<Position, Field> fields;
 	private final ArrayList<ControlPoint> controlPoints;
 	private final List<MainModelListener> listeners;
-	private MainModelCommunicatorListener mainModelCommunicatorListener;
 	private static final String WHITE = "white";
 	private static final String RED = "red";
-	public MainModel(int size, MapGeneratorStrategy mapGeneratorStrategy) {
+	private MainModelCommunicatorListener mmcl;
+
+	private MainModel(int size, MapGeneratorStrategy mapGeneratorStrategy) {
 		mapSize = size;
 		controlPoints = new ArrayList<>();
 		teams = new HashMap<>();
-		teams.put(WHITE, new Team(WHITE, "sarlMove", 5000, this));
-		teams.put(RED, new Team(RED, "dummy", 5000, this));
+		//TODO: refactor!!!
+		Team whiteTeam = new Team(WHITE, "sarlMove", 5000, this);
+		Team redTeam = new Team(RED, "dummy", 5000, this);
+		teams.put(WHITE, whiteTeam);
+		teams.put(RED, redTeam);
 		listeners = new ArrayList<>();
 		fields = mapGeneratorStrategy.generateMap(size);
 	}
@@ -38,21 +42,21 @@ public class MainModel {
 
 	public void placeDefaultUnits() {
 		//TODO: rework this
-		new Unit(fields.get(new Position(38, 20)), teams.get(WHITE), Unit.Type.SCOUT);
-		new Unit(fields.get(new Position(0, 0)), teams.get(RED), Unit.Type.TANK);
-		new Unit(fields.get(new Position(40, 40)), teams.get(RED), Unit.Type.SCOUT);
+//		new Unit(fields.get(new Position(38, 20)), teams.get(WHITE), Unit.Type.SCOUT);
+		new Unit(fields.get(new Position(0, 0)), teams.get(RED), Unit.Type.SCOUT);
+//		new Unit(fields.get(new Position(40, 40)), teams.get(RED), Unit.Type.SCOUT);
 		new Unit(fields.get(new Position(5, 5)), teams.get(RED), Unit.Type.TANK);
-		new Unit(fields.get(new Position(7, 3)), teams.get(RED), Unit.Type.TANK);
-		new Unit(fields.get(new Position(38, 25)), teams.get(RED), Unit.Type.TANK);
-		new Unit(fields.get(new Position(37, 20)), teams.get(WHITE), Unit.Type.TANK);
-		new Unit(fields.get(new Position(38, 21)), teams.get(WHITE), Unit.Type.TANK);
-		new Unit(fields.get(new Position(38, 22)), teams.get(WHITE), Unit.Type.INFANTRY);
+		new Unit(fields.get(new Position(7, 3)), teams.get(WHITE), Unit.Type.TANK);
+//		new Unit(fields.get(new Position(38, 25)), teams.get(RED), Unit.Type.TANK);
+//		new Unit(fields.get(new Position(37, 20)), teams.get(WHITE), Unit.Type.TANK);
+//		new Unit(fields.get(new Position(38, 21)), teams.get(WHITE), Unit.Type.TANK);
+//		new Unit(fields.get(new Position(38, 22)), teams.get(WHITE), Unit.Type.INFANTRY);
 	}
 
 	public void placeDefaultControlPoints() {
 		//TODO: rework this
-		controlPoints.add(new ControlPoint(new Position(40, 50), 10, 3, this));
-		controlPoints.add(new ControlPoint(new Position(15, 15), 10, 4, this));
+//		controlPoints.add(new ControlPoint(new Position(40, 50), 10, 3, this));
+		controlPoints.add(new ControlPoint(new Position(1, 5), 10, 2, this));
 	}
 
 	public void addListener(MainModelListener mml) {
@@ -75,7 +79,7 @@ public class MainModel {
 	}
 
 	public void addListener(MainModelCommunicatorListener mmcl) {
-		this.mainModelCommunicatorListener = mmcl;
+		this.mmcl = mmcl;
 	}
 
 	public void removeListener(MainModelListener mml) {
@@ -130,6 +134,10 @@ public class MainModel {
 		}
 	}
 
+	public void teamLost(String name) {
+
+	}
+
 	public Field getField(Position pos) {
 		return fields.get(pos);
 	}
@@ -140,11 +148,5 @@ public class MainModel {
 
 	public List<Team> getTeams() {
 		return new ArrayList<>(teams.values());
-	}
-
-	public void teamLost(String name) {
-		if (this.mainModelCommunicatorListener != null) {
-			mainModelCommunicatorListener.teamLost(name);
-		}
 	}
 }
