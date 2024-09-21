@@ -2,30 +2,17 @@ from Pos import Pos
 
 class UnitView:
     pos: Pos
-    id: int
+    uid: int
     health: int
     team: str
-    type: str
+    typ: str
 
     def __init__(self, payload):
-        self.id = payload["id"]
+        self.uid = payload["id"]
         self.health = payload["health"]
         self.pos = Pos(payload["pos"])
         self.team = payload["team"]
-        self.type = payload["type"]
+        self.typ = payload["type"]
 
-
-"""
-"seenUnits": [
-        {
-          "pos": {
-            "x": 7,
-            "y": 3
-          },
-          "health": 80,
-          "team": "white",
-          "id": 2,
-          "type": "TANK"
-        }
-
-"""
+    def __str__(self):
+        return f"id: {self.uid}, type: {self.typ}, field: {self.pos}"

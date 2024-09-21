@@ -17,7 +17,7 @@ class Wrapper:
         self.buffer = b''
         self.bufferSize = 4
 
-    def receive(self):
+    def receive(self, log : bool):
         try:
             tmpBuffer = self.sock.recv(self.bufferSize - len(self.buffer))
         except BlockingIOError:
@@ -30,9 +30,10 @@ class Wrapper:
                 self.bufferSize = int.from_bytes(self.buffer, "big")
                 self.state = State.DATA
                 self.buffer = b''
-                return self.receive()
+                return self.receive(log)
             else:
-                print(self.buffer)
+                if log:
+                    print(self.buffer)
                 x = json.loads(self.buffer)
                 self.state = State.SIZE
                 self.bufferSize = 4
