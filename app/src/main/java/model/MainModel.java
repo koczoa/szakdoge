@@ -53,6 +53,7 @@ public class MainModel {
 		//TODO: rework this
 		controlPoints.add(new ControlPoint(new Position(40, 50), 10, 3, this));
 		controlPoints.add(new ControlPoint(new Position(1, 5), 10, 2, this));
+
 	}
 
 	public void addListener(MainModelListener mml) {
