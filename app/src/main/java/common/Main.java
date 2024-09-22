@@ -4,20 +4,25 @@ import model.MainModel;
 import communicator.MainCommunicator;
 import view.MainView;
 
+import javax.swing.*;
 import java.io.IOException;
 
 public class Main {
 	public static void main(String[] args) throws IOException {
-		MainModel mm = new MainModel(10);
+		MainModel mm = new MainModel(60);
 		mm.placeDefaultUnits();
 		mm.placeDefaultControlPoints();
 		MainCommunicator mc = new MainCommunicator(mm);
 		mm.addListener(mc);
 
 		if (args.length >= 1 && args[0].equals("graf")) {
-			MainView mv = new MainView(1600, 1000, 1.1f, mm.width());
-			mm.addListener(mv);
+			SwingUtilities.invokeLater(() -> {
+                MainView mv = new MainView(1600, 1000, 1.1f, mm.width());
+                mm.addListener(mv);
+            });
+
 		}
+		System.out.println("awaiting for connections");
 		while (true) {
 			var go = mc.tick();
 			if(!go) {
