@@ -33,7 +33,6 @@ public class MainCommunicator implements MainModelCommunicatorListener {
 
 
 	public boolean tick() throws IOException {
-		System.out.println("awaiting for connections");
 		var client = server.accept();
 		if (client != null) {
 			client.configureBlocking(false);
