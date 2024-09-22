@@ -117,6 +117,13 @@ public final class Team {
 		}
 	}
 
+	public ArrayList<String> teamMembersToString() {
+		var res = new ArrayList<String>();
+		res.add(this.name);
+		units.forEach((id, u) -> res.add(u.toString()));
+		return res;
+	}
+
 	public List<JSONObject> teamMembersToJson() {
 		var res = new ArrayList<JSONObject>();
 		units.forEach((id, u) -> res.add(u.toJSON()));
