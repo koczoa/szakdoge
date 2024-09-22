@@ -2,6 +2,7 @@ package model;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import util.Tuplet;
 
 /**
  * Class to represent the in-simulation coordinates of Units, Fields, ControlPoints
@@ -51,6 +52,10 @@ public final class Position {
 			return this.x == v.x && this.y == v.y;
 		}
 		return false;
+	}
+
+	public Tuplet<Float, Float> screenCoords(float size, float udc) {
+		return new Tuplet<>((udc * size + udc * x * size)-size*udc/2, (udc * size + udc * y * size)-size*udc/2);
 	}
 
 	public boolean inDistance(Position p, float rov) {
