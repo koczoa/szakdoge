@@ -3,10 +3,6 @@ package model;
 import common.*;
 import common.map_generation.MapGeneratorStrategy;
 import common.map_generation.SimplexMapGeneratorStrategy;
-import communicator.Communicator;
-import logger.Log;
-
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -72,9 +68,6 @@ public class MainModel {
 		}
 		for (var f : fields.values()) {
 			mml.fieldCreated(f);
-		}
-		for (var t : teams.values()) {
-			mml.teamCreated(t);
 		}
 	}
 

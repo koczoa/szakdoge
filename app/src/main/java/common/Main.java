@@ -2,6 +2,7 @@ package common;
 
 import model.MainModel;
 import communicator.MainCommunicator;
+import view.MainView;
 
 import java.io.IOException;
 
@@ -12,6 +13,11 @@ public class Main {
 		mm.placeDefaultControlPoints();
 		MainCommunicator mc = new MainCommunicator(mm);
 		mm.addListener(mc);
+
+		if (args.length >= 1 && args[0].equals("graf")) {
+			MainView mv = new MainView(1600, 1000, 1.1f, mm.width());
+			mm.addListener(mv);
+		}
 		while (true) {
 			var go = mc.tick();
 			if(!go) {
