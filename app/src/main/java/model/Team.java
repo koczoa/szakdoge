@@ -71,7 +71,7 @@ public final class Team {
 	public List<PerceivedUnit> requestPerceivedUnits(Position pos, float size) {
 		var view = new ArrayList<PerceivedUnit>();
 		units.forEach((id, u) -> {
-			if (pos.inDistance(u.pos(), size) && u.pos() != pos) {
+			if (pos.inDistance(u.pos(), size)) {
 				view.add(u.getPerception());
 			}
 		});

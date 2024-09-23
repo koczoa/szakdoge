@@ -1,3 +1,4 @@
+from datetime import datetime
 from time import sleep
 
 from Team import Team
@@ -13,8 +14,10 @@ def setupMessageParser(payload):
 def commMessageParser(payload):
     t.addUnits(payload["units"])
     t.updateWorld(payload["map"])
-    print("comm:", t)
-    print(t.plotState())
+    # print(t.plotState())
+    print("befI")
+    print(t.intel())
+    print("aftI")
     t.clear()
 
 
@@ -37,11 +40,11 @@ ctr = 0
 while True:
     msg = w.receive(False)
     if msg is not None:
-        # print(f"{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}, d:{msg}")
         fromjson(msg)
         ctr += 1
+        print(f"-----------inter:{ctr}-----------")
     if ctr == 2:
         break
-    sleep(0.05)
+    sleep(0.1)
 
 w.close()

@@ -76,7 +76,7 @@ public class Communicator {
 
 		ByteBuffer sizeBuffer = ByteBuffer.allocate(4);
 		ByteBuffer buffer = StandardCharsets.UTF_8.encode(String.valueOf(message));
-		Log.d(javaLogLabel, "buffcap: " + buffer.capacity() + " buff: ");
+//		Log.d(javaLogLabel, "mapDescriptors: " + mapDescriptors);
 		sizeBuffer.putInt(buffer.limit());
 		sizeBuffer.position(0);
 

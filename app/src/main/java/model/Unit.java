@@ -268,4 +268,17 @@ public class Unit {
 		f.arrive(this);
 		this.field = f;
 	}
+
+	@Override
+	public int hashCode() {
+		return this.id;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		Unit that = (Unit) o;
+		return id == that.id;
+	}
 }

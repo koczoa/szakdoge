@@ -45,7 +45,7 @@ public class MainView extends JPanel implements MainModelListener {
         this.controlPointViews = new HashMap<>();
         this.teamViews = new HashMap<>();
 
-        Timer looper = new Timer(1000 / 100, e -> repaint());
+        Timer looper = new Timer(1000 / 2000, e -> repaint());
         looper.start();
 
     }
@@ -65,7 +65,7 @@ public class MainView extends JPanel implements MainModelListener {
         int i = 1;
         for (var tv: teamViews.values()) {
             int x = (width - height) * i / (teamViews.size() + 1);
-            tv.render(g2d, size + x, 100);
+            tv.render(g2d, size + x, 20);
             i++;
         }
     }

@@ -2,6 +2,8 @@ package model;
 
 import org.json.JSONObject;
 
+import java.util.Objects;
+
 public final class Field {
 	private final Position pos;
 	private final Type type;
@@ -60,5 +62,18 @@ public final class Field {
 
 	public Position pos() {
 		return pos;
+	}
+
+	@Override
+	public int hashCode() {
+		return this.pos.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		Field field = (Field) o;
+		return Objects.equals(pos, field.pos);
 	}
 }
