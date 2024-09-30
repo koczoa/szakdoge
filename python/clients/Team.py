@@ -40,7 +40,7 @@ class Team:
         for i in payload:
             self.units.append(Unit(i))
 
-    def updateWorld(self, payload : list[any]):
+    def updateWorld(self, payload: list[any]):
         for cp in payload["seenControlPoints"]:
             self.seenControlPoints.append(ControlPoint(cp))
 
@@ -80,6 +80,52 @@ class Team:
         #     for b in a:
         #         print(f"{str(b)} -> {b.score(self.name)}")
         #         print(f"{b.printStatus()}")
+
+    def autoEncoder(self):
+        mapData = np.zeros((self.mapSize, self.mapSize), np.int32)
+        for f in self.seenFields:
+            match f.type:
+                case "GRASS":
+                    mapData[f.pos.x][f.pos.y] += 1
+                case "WATER":
+                    mapData[f.pos.x][f.pos.y] += 2
+                case "MARSH":
+                    mapData[f.pos.x][f.pos.y] += 3
+                case "FOREST":
+                    mapData[f.pos.x][f.pos.y] += 4
+                case "BUILDING":
+                    mapData[f.pos.x][f.pos.y] += 5
+
+        # TODO: this could and SHOULD be optimised...
+        for u in self.seenUnits:
+            if u.team == self.name:
+                match u.typ:
+                    case "TANK":
+                        mapData[u.pos.x][u.pos.y] += 6
+                    case "INFANTRY":
+                        mapData[u.pos.x][u.pos.y] += 7
+                    case "SCOUT":
+                        mapData[u.pos.x][u.pos.y] += 8
+            else:
+                match u.typ:
+                    case "TANK":
+                        mapData[u.pos.x][u.pos.y] += 9
+                    case "INFANTRY":
+                        mapData[u.pos.x][u.pos.y] += 10
+                    case "SCOUT":
+                        mapData[u.pos.x][u.pos.y] += 11
+
+        for cp in self.seenControlPoints:
+            mapData[cp.pos.x][cp.pos.y] += 12
+
+        toPlt = np.transpose(mapData)
+        plt.title(self.name)
+        plt.imshow(toPlt, cmap='viridis', interpolation='none')
+        plt.show()
+
+
+
+
 
 
     def attack(self):

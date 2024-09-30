@@ -18,6 +18,7 @@ def commMessageParser(payload):
     print("befI")
     print(t.intel())
     print("aftI")
+    t.autoEncoder()
     t.clear()
 
 
