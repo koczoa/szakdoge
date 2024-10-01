@@ -5,27 +5,29 @@ import logger.Log;
 import model.Position;
 import model.Team;
 import org.json.JSONObject;
+import util.Wrapper;
 
 import java.io.*;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 
 public class Communicator {
-	private final SocketChannel socketChannel;
 	private final Team team;
+	private final Wrapper w;
 
     private final Label javaLogLabel;
 	private int runCounter = 0;
 	private boolean simuEnded = false;
 	private boolean weWon = false;
+	private State state;
+
+	public enum State {
+		WAIT,
+		READ
+	}
 
 	public Communicator(Team team, SocketChannel sc,  String strategy) throws IOException {
-		this.socketChannel = sc;
+		this.w = new Wrapper(sc);
 		this.team = team;
 		javaLogLabel = new Label(team.getName() + " java", Label.Color.BLACK,
 				team.getName().equals("red") ? Label.Color.RED : Label.Color.WHITE);
@@ -38,21 +40,41 @@ public class Communicator {
 		var setupMessage = new JSONObject();
 		setupMessage.put("type", "setupMessage");
 		setupMessage.put("payload", setupMessagePayLoad);
-
-		ByteBuffer sizeBuffer = ByteBuffer.allocate(4);
-		ByteBuffer buffer = StandardCharsets.UTF_8.encode(setupMessage.toString());
-		sizeBuffer.putInt(buffer.limit());
-		sizeBuffer.position(0);
-//		ByteBuffer buffer = ByteBuffer.allocate(sizeBuffer.limit());
-//		buffer.put
-		socketChannel.write(sizeBuffer);
-		socketChannel.write(buffer);
-		buffer.position(0);
-		sizeBuffer.position(0);
-		Log.d(javaLogLabel, "buffcap: " + buffer.capacity() + " bufflim: " + buffer.limit());
+		w.write(setupMessage, javaLogLabel);
+		this.state = State.WAIT;
+//		Log.d(javaLogLabel, "output: " + setupMessage);
 	}
 
-	public void communicate() throws IOException {
+	public boolean doStuff() throws IOException {
+		var readMessage = w.read();
+		if(readMessage == null) {
+			return false;
+		}
+		for (var command : readMessage) {
+			var obj = (JSONObject) command;
+			switch (obj.getString("action")) {
+				case "shoot": {
+					var target = obj.getJSONObject("target");
+					team.fireUnit(
+						obj.getInt("id"),
+						new Position(target.getInt("x"), target.getInt("y"))
+					);
+				} break;
+				case "move": {
+					var target = obj.getJSONObject("target");
+					team.moveUnit(
+						obj.getInt("id"),
+						new Position(target.getInt("x"), target.getInt("y"))
+					);
+				} break;
+			}
+		}
+		Log.d(javaLogLabel, "END communicating");
+		this.state = State.WAIT;
+		return true;
+	}
+
+	public void yourTurn() throws IOException {
 		team.refillActionPoints();
 		team.updateUnits();
 		runCounter++;
@@ -64,7 +86,6 @@ public class Communicator {
 		var unitsPayload = team.teamMembersToJson();
 		payload.put("units", unitsPayload);
 		payload.put("map", mapDescriptors);
-
 		if (!simuEnded) {
 			message.put("type", "commMessage");
 			message.put("payload", payload);
@@ -73,26 +94,21 @@ public class Communicator {
 			message.put("payload", weWon);
 			simuEnded = false;
 		}
+		w.write(message, javaLogLabel);
+		this.state = State.READ;
+	}
 
-		ByteBuffer sizeBuffer = ByteBuffer.allocate(4);
-		ByteBuffer buffer = StandardCharsets.UTF_8.encode(String.valueOf(message));
-//		Log.d(javaLogLabel, "output: " + message);
-		sizeBuffer.putInt(buffer.limit());
-		sizeBuffer.position(0);
-
-		socketChannel.write(sizeBuffer);
-		socketChannel.write(buffer);
-		buffer.position(0);
-		sizeBuffer.position(0);
-
-		//TODO: here comes the read-in part
-		Log.d(javaLogLabel, "END communicating");
+	public boolean tick() throws IOException {
+		if(this.state == State.READ) {
+			if(doStuff()) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public void close() {
-        try {
-            socketChannel.close();
-        } catch (IOException e) {}
+        w.close();
     }
 
 	public Team getTeam() {

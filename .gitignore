@@ -3,3 +3,4 @@
 app/build
 out
 python/clients/__pycache__
+python/clients/clients

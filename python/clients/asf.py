@@ -1,9 +1,11 @@
+import os
 from datetime import datetime
 from time import sleep
 
 from Team import Team
 from Wrapper import Wrapper
 
+print(os.getcwd())
 
 def setupMessageParser(payload):
     global t
@@ -15,10 +17,9 @@ def commMessageParser(payload):
     t.addUnits(payload["units"])
     t.updateWorld(payload["map"])
     # print(t.plotState())
-    print("befI")
-    print(t.intel())
-    print("aftI")
-    t.autoEncoder()
+    t.intel()
+    # t.autoEncoder()
+    w.send(t.dummy())
     t.clear()
 
 
@@ -44,7 +45,7 @@ while True:
         fromjson(msg)
         ctr += 1
         print(f"-----------inter:{ctr}-----------")
-    if ctr == 2:
+    if ctr == 40:
         break
     sleep(0.1)
 

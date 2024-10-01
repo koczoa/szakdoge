@@ -62,10 +62,11 @@ public class UnitView implements UnitListener {
             g2d.draw(new Ellipse2D.Float(this.center.a - r, this.center.b - r, 2*r, 2*r));
             r = ((viewRange + 0.5f) * squareSize * udc);
             g2d.draw(new Ellipse2D.Float(this.center.a - r, this.center.b - r, 2*r, 2*r));
-            if(currentlyShooting) {
-                g2d.draw(new Line2D.Float(this.center.a - squareSize/2, this.center.b - squareSize/2, shootingPos.x(), shootingPos.y()));
-            }
             g2d.setStroke(new BasicStroke(1f));
+            if(currentlyShooting) {
+                var shootingPosScreen = shootingPos.screenCoords(squareSize, udc);
+                g2d.draw(new Line2D.Float(this.center.a, this.center.b, shootingPosScreen.a, shootingPosScreen.b));
+            }
         }
     }
 

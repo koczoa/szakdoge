@@ -130,6 +130,7 @@ public final class Team {
 		return res;
 	}
 
+
 	public JSONObject toMerge() {
 		var sumSeenFields = new HashSet<Field>();
 		var sumSeenUnits = new HashSet<PerceivedUnit>();

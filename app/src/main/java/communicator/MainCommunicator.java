@@ -19,6 +19,7 @@ public class MainCommunicator implements MainModelCommunicatorListener {
 	private static final String WHITE = "white";
 	private static final String RED = "red";
 	private final MainModel mm;
+	private int activeIdx;
 
     public MainCommunicator(MainModel mm) throws IOException {
 		this.mm = mm;
@@ -28,39 +29,35 @@ public class MainCommunicator implements MainModelCommunicatorListener {
 		server.configureBlocking(false);
 		communictors = new ArrayList<>();
 		communicationLogLabel = new Label("Communication", Label.Color.NONE, Label.Color.NONE);
-
+		this.activeIdx = 0;
 	}
-
 
 	public boolean tick() throws IOException {
 		var client = server.accept();
 		if (client != null) {
 			client.configureBlocking(false);
 			switch (communictors.size()) {
-				case 0:
-					communictors.add(new Communicator(mm.team(WHITE), client,  "dummy"));
-					break;
-				case 1:
-					communictors.add(new Communicator(mm.team(RED), client,  "dummy"));
-					break;
-				case 2:
-					break;
-				default:
-					client.close();
+				case 0 -> communictors.add(new Communicator(mm.team(WHITE), client,  "dummy"));
+				case 1 -> {
+					communictors.add(new Communicator(mm.team(RED), client, "dummy"));
+					communictors.get(activeIdx).yourTurn();
+				}
+                default -> client.close();
 			}
 		}
 		if (communictors.size() == 2) {
-			for (var comm : communictors) {
-				try {
-					comm.communicate();
-				} catch (IOException e) {
-					comm.close();
-					return false;
+			try {
+				if(communictors.get(activeIdx).tick()) {
+					activeIdx = 1 - activeIdx;
+					communictors.get(activeIdx).yourTurn();
 				}
+			} catch (IOException e) {
+				communictors.get(activeIdx).close();
+				return false;
 			}
         }
 		try {
-			Thread.sleep(2000);
+			Thread.sleep(500);
 		} catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}

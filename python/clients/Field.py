@@ -3,11 +3,11 @@ from Pos import Pos
 
 class Field:
     pos: Pos
-    type: str
+    typ: str
 
     def __init__(self, payload):
         self.pos = Pos(payload["pos"])
-        self.type = payload["type"]
+        self.typ = payload["type"]
 
     def __eq__(self, other):
         return self.pos == other.pos
@@ -19,4 +19,4 @@ class Field:
         return self.pos.val()
 
     def getType(self):
-        return self.type
+        return self.typ
