@@ -24,7 +24,7 @@ public class Main {
 		}
 		System.out.println("awaiting for connections");
 		while (true) {
-			var go = mc.tick();
+			var go = mc.tick(200);
 			if(!go) {
 				System.exit(0);
 			}

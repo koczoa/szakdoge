@@ -32,14 +32,14 @@ public class MainCommunicator implements MainModelCommunicatorListener {
 		this.activeIdx = 0;
 	}
 
-	public boolean tick() throws IOException {
+	public boolean tick(int pollTimeOut) throws IOException {
 		var client = server.accept();
 		if (client != null) {
 			client.configureBlocking(false);
 			switch (communictors.size()) {
-				case 0 -> communictors.add(new Communicator(mm.team(WHITE), client,  "dummy"));
+				case 0 -> communictors.add(new Communicator(mm.team(WHITE), client,  mm.team(WHITE).getStrategy()));
 				case 1 -> {
-					communictors.add(new Communicator(mm.team(RED), client, "dummy"));
+					communictors.add(new Communicator(mm.team(RED), client, mm.team(RED).getStrategy()));
 					communictors.get(activeIdx).yourTurn();
 				}
                 default -> client.close();
@@ -57,7 +57,7 @@ public class MainCommunicator implements MainModelCommunicatorListener {
 			}
         }
 		try {
-			Thread.sleep(500);
+			Thread.sleep(pollTimeOut);
 		} catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}

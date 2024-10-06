@@ -105,12 +105,15 @@ public class Unit {
 		}
 		if (!field.isNeighbouring(dest)) {
 			Log.e(javaLogLabel,this.id + "id: move not neighbouring: curr: " + this.field.pos().toString() + ", dest: " + dest);
+			return;
 		}
 		if (!steppableTypes.contains(dest.type())) {
 			Log.e(javaLogLabel,this.id + "id: dest not steppable");
+			return;
 		}
 		if (!dest.arrive(this)) {
 			Log.e(javaLogLabel,this.id + "id: dest occupied");
+			return;
 		}
 		if (dest == field) {
 			return;
@@ -118,7 +121,7 @@ public class Unit {
 		field.leave();
 		field = dest;
 		fuel -= consumption;
-		actionPoints--;
+//		actionPoints--;
 	}
 
 	public void shoot(Field target) {
@@ -127,9 +130,11 @@ public class Unit {
 		}
 		if (ammo <= 0) {
 			Log.e(javaLogLabel,this.id + "id: out of ammo");
+			return;
 		}
 		if (!field.inDistance(target, shootRange + 0.5f)) {
 			Log.e(javaLogLabel,this.id + "id: out of range");
+			return;
 		}
 
 		target.takeShot(damage);
@@ -137,7 +142,7 @@ public class Unit {
 			listener.onShoot(target.pos());
 		}
 		ammo--;
-		actionPoints--;
+//		actionPoints--;
 	}
 
 	public void takeShot(int damage) {

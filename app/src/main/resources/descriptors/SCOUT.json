@@ -10,6 +10,6 @@
     "price": 250,
     "maxHealth": 70,
     "shootRange": 0,
-    "consumption": 6,
+    "consumption": 3,
     "maxActionPoints": 5
 }
