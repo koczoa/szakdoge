@@ -39,7 +39,7 @@ class Team:
         self.seenControlPoints = []
         self.seenFields = []
         self.mapSize = ms
-        self.desiredPartSize = 10
+        self.desiredPartSize = 5
         self.row = (self.mapSize // self.desiredPartSize)
         self.col = (self.mapSize // self.desiredPartSize)
         self.mapParts = [[MapPart(i, j) for i in range(self.col)] for j in range(self.row)]
@@ -80,12 +80,24 @@ class Team:
         return f"sf: {[str(f) for f in self.seenFields]} \n su: {[str(u) for u in self.seenUnits]}"
 
     def moveUnitDummy(self, u: Unit):
+        print("called")
         choseOne = random.choice([n for n in self.getNeighbours(u.currentField) if n.typ in u.steppables])
         if choseOne is not None:
             pos = {"x": choseOne.pos.x, "y": choseOne.pos.y}
         else:
             pos = {"x": u.currentField.pos.x, "y": u.currentField.pos.y}
         self.messageQueue.append({"id": u.uid, "action": "move", "target": pos})
+
+    def moveUnitAStar(self, u: Unit, goal: Field):
+        came_from = self.a_star_search(u, goal)
+        pathTo = self.reconstruct_path(came_from, u.currentField, goal)
+
+        if len(pathTo) < 2:
+            self.moveUnitDummy(u)
+            return
+
+        self.messageQueue.append(
+            {"id": u.uid, "action": "move", "target": {"x": pathTo[1].pos.x, "y": pathTo[1].pos.y}})
 
     def getNeighbours(self, fiq: Field) -> list[Field]:
         return [f for f in self.terrainMemory
@@ -103,6 +115,12 @@ class Team:
             x = math.floor(cp.pos.x / self.desiredPartSize)
             y = math.floor(cp.pos.y / self.desiredPartSize)
             self.mapParts[x][y].addCp(cp)
+
+        for f in self.seenFields:
+            x = math.floor(f.pos.x / self.desiredPartSize)
+            y = math.floor(f.pos.y / self.desiredPartSize)
+            self.mapParts[x][y].addField(f)
+
         # for a in self.mapParts:
         #     for b in a:
         #         print(f"{str(b)} -> {b.score(self.name)}")
@@ -186,22 +204,26 @@ class Team:
                 if currDist > maxDist:
                     farthest = f
                     maxDist = currDist
-        came_from = self.a_star_search(scout.currentField, farthest, scout)
-        pathTo = [p for p in self.reconstruct_path(came_from, scout.currentField, farthest)]
 
-        if len(pathTo) < 2:
-            self.moveUnitDummy(scout)
-            return
+        self.moveUnitAStar(scout, farthest)
 
-        self.messageQueue.append(
-            {"id": scout.uid, "action": "move", "target": {"x": pathTo[1].pos.x, "y": pathTo[1].pos.y}})
+    def conquer(self, mp: MapPart):
+        for u in [u for u in self.units if u.typ != "SCOUT"]:
+            self.moveUnitAStar(u, random.choice([f for f in mp.fields if f.typ in u.steppables]))
 
-    def conquerControlPoint(self):
+    def attack(self, mp: MapPart):
+        pass
+
+    def retreat(self):
         pass
 
     def heuristic(self) -> None:
         self.scouting()
-        self.conquerControlPoint()
+        if len(self.seenControlPoints) > 0:
+            # this will be the retreat function
+            # selectedMapPart = max((mp for mps in self.mapParts for mp in mps), key=lambda mp: mp.score(self.name))
+            selectedMapPart = [mp for mps in self.mapParts for mp in mps if len(mp.cps) > 0][0]
+            self.conquer(selectedMapPart)
 
     def doAction(self):
         if self.strategy == "dummy":
@@ -211,13 +233,13 @@ class Team:
             self.heuristic()
         return self.messageQueue
 
-    def a_star_search(self, start: Field, goal: Field, u: Unit):
+    def a_star_search(self,  u: Unit, goal: Field):
         frontier = PriorityQueue()
-        frontier.put(start, 0)
+        frontier.put(u.currentField, 0)
         came_from: dict[Field, Optional[Field]] = {}
         cost_so_far: dict[Field, float] = {}
-        came_from[start] = None
-        cost_so_far[start] = 0
+        came_from[u.currentField] = None
+        cost_so_far[u.currentField] = 0
 
         while not frontier.empty():
             current: Field = frontier.get()
