@@ -45,6 +45,7 @@ public class MainCommunicator implements MainModelCommunicatorListener {
                 default -> client.close();
 			}
 		}
+		mm.controlPointsUpdate();
 		if (communictors.size() == 2) {
 			try {
 				if(communictors.get(activeIdx).tick()) {

@@ -66,6 +66,7 @@ public class UnitView implements UnitListener {
             if(currentlyShooting) {
                 var shootingPosScreen = shootingPos.screenCoords(squareSize, udc);
                 g2d.draw(new Line2D.Float(this.center.a, this.center.b, shootingPosScreen.a, shootingPosScreen.b));
+                currentlyShooting = false;
             }
         }
     }

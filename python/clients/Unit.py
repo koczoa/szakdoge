@@ -3,6 +3,7 @@ import os
 
 from Field import Field
 
+
 class Unit:
     def __init__(self, payload):
         teamName: str
@@ -25,7 +26,7 @@ class Unit:
         self.typ = payload["type"]
         desc = json.loads(open(f"/home/kocc/szakdoge/app/src/main/resources/descriptors/{self.typ}.json").read())
         self.steppables = desc["steppables"]
+        self.shootRange = desc["shootRange"]
 
     def __str__(self):
         return f"id: {self.uid}, type: {self.typ}, field: {self.currentField}"
-

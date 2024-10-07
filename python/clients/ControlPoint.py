@@ -3,7 +3,7 @@ from Pos import Pos
 
 class ControlPoint:
     pos: Pos
-    id: int
+    uid: int
     size: int
     percentage: int
 
@@ -11,5 +11,7 @@ class ControlPoint:
         self.pos = Pos(payload["pos"])
         self.percentage = payload["percentage"]
         self.size = payload["size"]
-        self.id = payload["id"]
+        self.uid = payload["id"]
 
+    def __str__(self):
+        return f"id: {self.uid}, pos: {self.pos}"

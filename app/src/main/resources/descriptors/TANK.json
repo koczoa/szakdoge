@@ -4,7 +4,7 @@
       "GRASS",
       "MARSH"
     ],
-    "maxFuel": 100,
+    "maxFuel": 300,
     "viewRange": 8,
     "maxAmmo": 6,
     "price": 400,

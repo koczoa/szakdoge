@@ -99,9 +99,11 @@ public class Unit {
 	public void move(Field dest) {
 		if (actionPoints <= 0) {
 			Log.e(javaLogLabel,this.id + "id: out of actionPoints");
+			return;
 		}
 		if (fuel < consumption) {
 			Log.e(javaLogLabel,this.id + "id: out of fuel");
+			return;
 		}
 		if (!field.isNeighbouring(dest)) {
 			Log.e(javaLogLabel,this.id + "id: move not neighbouring: curr: " + this.field.pos().toString() + ", dest: " + dest);
@@ -127,6 +129,7 @@ public class Unit {
 	public void shoot(Field target) {
 		if (actionPoints <= 0) {
 			Log.e(javaLogLabel,this.id + "id: out of actionPoints");
+			return;
 		}
 		if (ammo <= 0) {
 			Log.e(javaLogLabel,this.id + "id: out of ammo");

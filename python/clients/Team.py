@@ -1,22 +1,17 @@
-import json
 import math
-import os
 import random
-import shutil
 import time
 from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from Pos import Pos
-from Unit import Unit
 from ControlPoint import ControlPoint
 from Field import Field
-from UnitView import UnitView
 from MapPart import MapPart
 from PriorityQueue import PriorityQueue
-
+from Unit import Unit
+from UnitView import UnitView
 
 plt.ion()
 
@@ -34,6 +29,7 @@ class Team:
     messageQueue: list[str]
     col:int
     row: int
+    terrainMemory: list[Field]
 
     def __init__(self, name: str, strategy: str, ms: int):
         self.name = name
@@ -48,6 +44,7 @@ class Team:
         self.col = (self.mapSize // self.desiredPartSize)
         self.mapParts = [[MapPart(i, j) for i in range(self.col)] for j in range(self.row)]
         self.messageQueue = []
+        self.terrainMemory = []
 
     def __str__(self):
         return f"teamName: {self.name}, strategy: {self.strategy}, units: {[str(u) for u in self.units]}"
@@ -63,8 +60,13 @@ class Team:
         for f in payload["seenFields"]:
             self.seenFields.append(Field(f))
 
+        for f in self.seenFields:
+            if f not in self.terrainMemory:
+                self.terrainMemory.append(f)
+
         for uv in payload["seenUnits"]:
             self.seenUnits.append(UnitView(uv))
+
 
     def clear(self):
         self.units = []
@@ -77,24 +79,20 @@ class Team:
     def plotState(self):
         return f"sf: {[str(f) for f in self.seenFields]} \n su: {[str(u) for u in self.seenUnits]}"
 
-    def moveUnit(self):
-        # this should do the a* part
-        # it is here, because this is the part where all the seen fields are present
-        # i do not want to give the seenFields to everyone one by one
-        #   this would help actually, because the unit knows what it can step on
-        pass
+    def moveUnitDummy(self, u: Unit):
+        choseOne = random.choice([n for n in self.getNeighbours(u.currentField) if n.typ in u.steppables])
+        if choseOne is not None:
+            pos = {"x": choseOne.pos.x, "y": choseOne.pos.y}
+        else:
+            pos = {"x": u.currentField.pos.x, "y": u.currentField.pos.y}
+        self.messageQueue.append({"id": u.uid, "action": "move", "target": pos})
 
     def getNeighbours(self, fiq: Field) -> list[Field]:
-        return [f for f in self.seenFields
+        return [f for f in self.terrainMemory
                 if abs(f.pos.x - fiq.pos.x) <= 1
                 and abs(f.pos.y - fiq.pos.y) <= 1
                 and f != fiq]
 
-    def getNPos(self, fiq: Pos) -> list[Pos]:
-        return [f.pos for f in self.seenFields
-                if abs(f.pos.x - fiq.x) <= 1
-                and abs(f.pos.y - fiq.y) <= 1
-                and f.pos != fiq]
     def intel(self):
         for uv in self.seenUnits:
             x = math.floor(uv.pos.x / self.desiredPartSize)
@@ -110,10 +108,7 @@ class Team:
         #         print(f"{str(b)} -> {b.score(self.name)}")
         #         print(f"{b.printStatus()}")
 
-    def autoEncoder(self, cleanDir: bool = False, show: bool = False):
-        if cleanDir:
-            shutil.rmtree(f"{self.name}")
-            os.mkdir(self.name)
+    def autoEncoder(self, show: bool = False):
         mapData = np.zeros((self.mapSize, self.mapSize), np.int32)
         for f in self.seenFields:
             match f.typ:
@@ -153,7 +148,7 @@ class Team:
         plt.clf()
         toPlt = np.transpose(mapData)
         plt.title(self.name)
-        plt.imshow(toPlt, cmap='viridis', interpolation='none')
+        plt.imshow(toPlt, cmap='viridis', interpolation='none', vmin=0, vmax=27)
         plt.colorbar()
         plt.draw()
         plt.ioff()
@@ -161,64 +156,60 @@ class Team:
         if show and self.strategy != "dummy":
             plt.show()
 
-    def dummy(self) -> list[str]:
+    def dummyMove(self) -> None:
+        for u in [u for u in self.units if u.fuel > 0]:
+            self.moveUnitDummy(u)
+
+
+    def dummyShoot(self) -> None:
         for u in self.units:
-            msg = {}
-            negihs = [n for n in self.getNeighbours(u.currentField) if n.typ in u.steppables]
-            choseOne = random.choice(negihs)
-            if choseOne is not None:
-                pos = {"x": choseOne.pos.x, "y": choseOne.pos.y}
-            else:
-                pos = {"x": u.currentField.pos.x, "y": u.currentField.pos.y}
-            if random.randint(1, 2) == 1 or u.typ == "SCOUT":
-                msg["id"] = u.uid
-                msg["action"] = "move"
-                msg["target"] = pos
-            else:
-                msg["id"] = u.uid
-                msg["action"] = "shoot"
-                msg["target"] = pos
-            self.messageQueue.append(msg)
-        return self.messageQueue
+            if u.typ == "SCOUT" or u.ammo <= 0:
+                break
+            choseOne = random.choice([f for f in self.seenFields if f.pos.dist(u.currentField.pos) < u.shootRange])
+            pos = {"x": choseOne.pos.x, "y": choseOne.pos.y}
+            self.messageQueue.append({"id": u.uid, "action": "shoot", "target": pos})
 
-    def heuristic(self) -> list[str]:
+    def scouting(self) -> None:
         scout = [s for s in self.units if s.typ == "SCOUT"][0]
-
-        # TODO: polák refactoring needed
         x = int(sum(u.currentField.pos.x for u in self.units) / len(self.units))
         y = int(sum(u.currentField.pos.y for u in self.units) / len(self.units))
 
         centerOfMass = [f for f in self.seenFields if f.pos.x == x and f.pos.y == y][0]
-
-        print(f"com:{centerOfMass}")
         farthest = scout.currentField
-        print(f"farthest: {farthest}")
-        maxDist = 0
-        for f in self.seenFields:
-            currDist = f.pos.dist(centerOfMass.pos)
-            # print(f"cd:{currDist}, md:{maxDist}, cf:{f.pos}, ff:{farthest}")
-            if currDist > maxDist:
-                # print("change")
-                farthest = f
-                maxDist = currDist
-        came_from, _ = self.a_star_search(scout.currentField, farthest, scout)
-        print(came_from)
-        print(hex(id(farthest)))
+        if len(self.seenControlPoints) != 0:
+            selectedCp = [cp for cp in self.seenControlPoints][0]
+            farthest = [f for f in self.seenFields if f.pos == selectedCp.pos][0]
+        else:
+            maxDist = 0
+            for f in self.seenFields:
+                currDist = f.pos.dist(centerOfMass.pos)
+                if currDist > maxDist:
+                    farthest = f
+                    maxDist = currDist
+        came_from = self.a_star_search(scout.currentField, farthest, scout)
         pathTo = [p for p in self.reconstruct_path(came_from, scout.currentField, farthest)]
-        print([str(p) for p in self.reconstruct_path(came_from, scout.currentField, farthest)])
 
-        msg = {}
-        msg["id"] = scout.uid
-        msg["action"] = "move"
-        msg["target"] = {"x": pathTo[1].pos.x, "y": pathTo[1].pos.y}
-        self.messageQueue.append(msg)
-        return self.messageQueue
+        if len(pathTo) < 2:
+            self.moveUnitDummy(scout)
+            return
+
+        self.messageQueue.append(
+            {"id": scout.uid, "action": "move", "target": {"x": pathTo[1].pos.x, "y": pathTo[1].pos.y}})
+
+    def conquerControlPoint(self):
+        pass
+
+    def heuristic(self) -> None:
+        self.scouting()
+        self.conquerControlPoint()
 
     def doAction(self):
         if self.strategy == "dummy":
-            return self.dummy()
+            self.dummyMove()
+            self.dummyShoot()
         elif self.strategy == "heuristic":
-            return self.heuristic()
+            self.heuristic()
+        return self.messageQueue
 
     def a_star_search(self, start: Field, goal: Field, u: Unit):
         frontier = PriorityQueue()
@@ -242,7 +233,7 @@ class Team:
                     frontier.put(next, priority)
                     came_from[next] = current
 
-        return came_from, cost_so_far
+        return came_from
 
     def heu(self, a: Field, b: Field) -> float:
         x1 = a.pos.x

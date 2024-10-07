@@ -1,24 +1,21 @@
-import os
-from datetime import datetime
 from time import sleep
 
 from Team import Team
 from Wrapper import Wrapper
 
-print(os.getcwd())
 
 def setupMessageParser(payload):
     global t
     t = Team(payload["teamName"], payload["strategy"], payload["mapSize"])
-    print("setup:", t)
+    print(f"setup: {t}")
 
 
 def commMessageParser(payload):
     t.addUnits(payload["units"])
     t.updateWorld(payload["map"])
-    # print(t.plotState())
     t.intel()
-    t.autoEncoder(True, True)
+    if t.strategy != "dummy":
+        t.autoEncoder()
     w.send(t.doAction())
     t.clear()
 

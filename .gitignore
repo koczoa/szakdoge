@@ -6,4 +6,5 @@ python/clients/__pycache__
 python/clients/clients
 python/clients/red
 python/clients/white
+python/clients/test.py
 *.mp4

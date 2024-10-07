@@ -118,7 +118,7 @@ public class MainModel {
 	public List<Field> requestFileds(Position pos, float size) {
 		var view = new ArrayList<Field>();
 		fields.forEach((p, f) -> {
-			if (pos.inDistance(p, size) && pos.hashCode() != p.hashCode()) {
+			if (pos.inDistance(p, size)) {
 				view.add(f);
 			}
 		});
