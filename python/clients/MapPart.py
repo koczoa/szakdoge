@@ -11,7 +11,7 @@ class MapPart:
     cps = list[ControlPoint]
     fields = list[Field]
 
-    def __init__(self, x:int, y:int):
+    def __init__(self, x: int, y: int):
         self.x = x
         self.y = y
         self.red_uvs = []
@@ -28,7 +28,7 @@ class MapPart:
     def addUnit(self, uv: UnitView):
         if uv.team == "red":
             self.red_uvs.append(uv)
-        elif uv.team == "white":
+        else:
             self.white_uvs.append(uv)
 
     def addCp(self, cp: ControlPoint):

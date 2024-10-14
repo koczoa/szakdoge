@@ -26,7 +26,6 @@ class Pos:
     def dist(self, other: Self):
         return max(abs(self.x - other.x), abs(self.y - other.y))
 
-
     def distOL(self, other: Self):
         return max(abs(self.x - other["x"]), abs(self.y - other["y"]))
 

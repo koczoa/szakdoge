@@ -15,13 +15,14 @@ def commMessageParser(payload):
     t.updateWorld(payload["map"])
     t.intel()
     if t.strategy != "dummy":
-        t.autoEncoder()
+        t.autoEncoder(save=False)
     w.send(t.doAction())
     t.clear()
 
 
 def endMessageParser(payload):
-    pass
+    print(payload)
+    w.close()
 
 
 def fromjson(x):
@@ -45,8 +46,9 @@ def main():
             ctr += 1
             print(f"----------------inter:{ctr}----------------")
         if ctr == 100:
+            t.profileSave()
             break
-        sleep(0.1)
+        # sleep(0.1)
 
     w.close()
 

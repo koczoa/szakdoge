@@ -131,10 +131,6 @@ public class MainModel {
 		}
 	}
 
-	public void teamLost(String name) {
-
-	}
-
 	public Field getField(Position pos) {
 		return fields.get(pos);
 	}

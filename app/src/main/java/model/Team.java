@@ -14,6 +14,7 @@ public final class Team {
 	private final HashMap<Integer, Unit> deadUnits;
 	private final int budget;
 	private final MainModel mm;
+	private boolean weDead = false;
 	Random rand = new Random();
 
 	public Team(String name, String strategy, int budget, MainModel mm) {
@@ -113,7 +114,7 @@ public final class Team {
 		var deadUnit = units.remove(id);
 		deadUnits.put(id, deadUnit);
 		if (units.isEmpty()) {
-			mm.teamLost(name);
+			weDead = true;
 		}
 	}
 
@@ -128,6 +129,10 @@ public final class Team {
 		var res = new ArrayList<JSONObject>();
 		units.forEach((id, u) -> res.add(u.toJSON()));
 		return res;
+	}
+
+	public boolean getWeDead() {
+		return weDead;
 	}
 
 

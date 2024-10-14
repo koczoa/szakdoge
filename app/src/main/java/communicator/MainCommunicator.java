@@ -2,12 +2,10 @@ package communicator;
 
 import model.MainModel;
 import common.MainModelCommunicatorListener;
-import logger.Label;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,7 +13,6 @@ public class MainCommunicator implements MainModelCommunicatorListener {
 	ServerSocketChannel server;
 	InetSocketAddress address;
 	private final List<Communicator> communictors;
-	private final Label communicationLogLabel;
 	private static final String WHITE = "white";
 	private static final String RED = "red";
 	private final MainModel mm;
@@ -28,7 +25,6 @@ public class MainCommunicator implements MainModelCommunicatorListener {
 		server.bind(address);
 		server.configureBlocking(false);
 		communictors = new ArrayList<>();
-		communicationLogLabel = new Label("Communication", Label.Color.NONE, Label.Color.NONE);
 		this.activeIdx = 0;
 	}
 

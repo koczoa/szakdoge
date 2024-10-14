@@ -17,8 +17,6 @@ public class Communicator {
 
     private final Label javaLogLabel;
 	private int runCounter = 0;
-	private boolean simuEnded = false;
-	private boolean weWon = false;
 	private State state;
 
 	public enum State {
@@ -86,26 +84,21 @@ public class Communicator {
 		var unitsPayload = team.teamMembersToJson();
 		payload.put("units", unitsPayload);
 		payload.put("map", mapDescriptors);
-		if (!simuEnded) {
+		var weWon = team.getWeDead();
+		if (!weWon) {
 			message.put("type", "commMessage");
 			message.put("payload", payload);
 		} else {
 			message.put("type", "endMessage");
 			message.put("payload", weWon);
-			simuEnded = false;
 		}
 		w.write(message, javaLogLabel);
 		this.state = State.READ;
 	}
 
 	public boolean tick() throws IOException {
-		if(this.state == State.READ) {
-			if(doStuff()) {
-				return true;
-			}
-		}
-		return false;
-	}
+        return this.state == State.READ && doStuff();
+    }
 
 	public void close() {
         w.close();
