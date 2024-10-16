@@ -23,6 +23,7 @@ def commMessageParser(payload):
 def endMessageParser(payload):
     print(payload)
     w.close()
+    exit()
 
 
 def fromjson(x):

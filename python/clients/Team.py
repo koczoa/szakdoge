@@ -16,15 +16,25 @@ from PriorityQueue import PriorityQueue
 from Unit import Unit
 from UnitView import UnitView
 
-plt.ion()
+times = []
+lens = []
 
 
 def heu(a: Field, b: Field) -> float:
     return abs(a.pos.x - b.pos.x) + abs(a.pos.y - b.pos.y)
 
 
-times = []
-lens = []
+def reconstruct_path(came_from: dict[Field, Optional[Field]], start: Field, goal: Field) -> list[Field]:
+    current: Field = goal
+    path: list[Field] = []
+    if goal not in came_from.keys():
+        return []
+    while current != start:
+        path.append(current)
+        current = came_from[current]
+    path.append(start)
+    path.reverse()
+    return path
 
 
 class Team:
@@ -40,7 +50,7 @@ class Team:
     messageQueue: list[dict]
     col: int
     row: int
-    terrainMemory: list[Field]
+    terrainMemory: list[list[Optional[Field]]]
     folderName: str
     maxEnemySize: int
 
@@ -57,7 +67,7 @@ class Team:
         self.col = (self.mapSize // self.desiredPartSize)
         self.mapParts = [[MapPart(i, j) for i in range(self.col)] for j in range(self.row)]
         self.messageQueue = []
-        self.terrainMemory = []
+        self.terrainMemory = [[None for _ in range(self.mapSize)] for _ in range(self.mapSize)]
         self.maxEnemySize = 0
         if self.strategy != "dummy":
             self.folderName = f"replay_{self.name}_{int(time.time() * 1000)}"
@@ -77,9 +87,8 @@ class Team:
         for f in payload["seenFields"]:
             self.seenFields.append(Field(f))
 
-        for f in self.seenFields:
-            if f not in self.terrainMemory:
-                self.terrainMemory.append(f)
+        for sf in self.seenFields:
+            self.terrainMemory[sf.pos.x][sf.pos.y] = sf
 
         for uv in payload["seenUnits"]:
             self.seenUnits.append(UnitView(uv))
@@ -109,7 +118,7 @@ class Team:
         came_from = self.a_star_search(u, goal)
         # print("rec path: ")
         # print(timeit.timeit("self.reconstruct_path(came_from, u.currentField, goal)", globals=locals(), number=1))
-        pathTo = self.reconstruct_path(came_from, u.currentField, goal)
+        pathTo = reconstruct_path(came_from, u.currentField, goal)
 
         if len(pathTo) < 2:
             self.moveUnitDummy(u)
@@ -118,10 +127,10 @@ class Team:
             {"id": u.uid, "action": "move", "target": {"x": pathTo[1].pos.x, "y": pathTo[1].pos.y}})
 
     def getNeighbours(self, fiq: Field) -> list[Field]:
-        return [f for f in self.terrainMemory
-                if abs(f.pos.x - fiq.pos.x) <= 1
-                and abs(f.pos.y - fiq.pos.y) <= 1
-                and f != fiq]
+        return [res for (x, y) in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
+                if 0 <= (a := fiq.pos.x + x) < self.mapSize
+                if 0 <= (b := fiq.pos.y + y) < self.mapSize
+                if (res := self.terrainMemory[a][b]) is not None]
 
     def intel(self):
         for uv in self.seenUnits:
@@ -297,14 +306,13 @@ class Team:
             self.dummyMove()
             self.dummyShoot()
         elif self.strategy == "heuristic":
-            times.append(timeit.timeit("self.heuristic()", globals=locals(), number=1))
-            lens.append(len(self.terrainMemory))
+            # times.append(timeit.timeit("self.heuristic()", globals=locals(), number=1))
+            # lens.append(len(self.terrainMemory))
             # print(f"terrain memory len:{len(self.terrainMemory)}, heu:", timeit.timeit("self.heuristic()", globals=locals(), number=1))
             self.heuristic()
-            self.profileSave()
         return self.messageQueue
 
-    def a_star_search(self,  u: Unit, goal: Field):
+    def a_star_search(self, u: Unit, goal: Field):
         frontier = PriorityQueue()
         frontier.put(u.currentField, 0)
         came_from: dict[Field, Optional[Field]] = {}
@@ -328,17 +336,6 @@ class Team:
 
         return came_from
 
-    def reconstruct_path(self, came_from: dict[Field, Optional[Field]], start: Field, goal: Field) -> list[Field]:
-        current: Field = goal
-        path: list[Field] = []
-        if goal not in came_from.keys():
-            return []
-        while current != start:
-            path.append(current)
-            current = came_from[current]
-        path.append(start)
-        path.reverse()
-        return path
 
     def profileSave(self):
         plt.xlabel("lens")
