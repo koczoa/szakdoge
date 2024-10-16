@@ -17,13 +17,13 @@ public class MainModel {
 	private final List<MainModelListener> listeners;
 	private static final String WHITE = "white";
 	private static final String RED = "red";
-	private MainModelCommunicatorListener mmcl;
+	private Team winnerTeam;
 
 	private MainModel(int size, MapGeneratorStrategy mapGeneratorStrategy) {
 		mapSize = size;
 		controlPoints = new ArrayList<>();
 		teams = new HashMap<>();
-		teams.put(WHITE, new Team(WHITE, "dummy", 5000, this));
+		teams.put(WHITE, new Team(WHITE, "heuristic", 5000, this));
 		teams.put(RED, new Team(RED, "heuristic", 5000, this));
 		listeners = new ArrayList<>();
 		fields = mapGeneratorStrategy.generateMap(size);
@@ -75,10 +75,6 @@ public class MainModel {
 		}
 	}
 
-	public void addListener(MainModelCommunicatorListener mmcl) {
-		this.mmcl = mmcl;
-	}
-
 	public void removeListener(MainModelListener mml) {
 		this.listeners.remove(mml);
 
@@ -115,7 +111,7 @@ public class MainModel {
 		return view;
 	}
 
-	public List<Field> requestFileds(Position pos, float size) {
+	public List<Field> requestFields(Position pos, float size) {
 		var view = new ArrayList<Field>();
 		fields.forEach((p, f) -> {
 			if (pos.inDistance(p, size)) {
@@ -139,7 +135,14 @@ public class MainModel {
 		return mapSize;
 	}
 
-	public List<Team> getTeams() {
-		return new ArrayList<>(teams.values());
+	public void teamLost(String teamName) {
+		teams.remove(teamName);
+		if(teams.size() == 1) {
+			winnerTeam = teams.values().iterator().next();
+		}
+	}
+
+	public Team getWinnerTeam() {
+		return this.winnerTeam;
 	}
 }

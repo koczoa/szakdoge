@@ -26,13 +26,14 @@ def endMessageParser(payload):
     exit()
 
 
-def fromjson(x):
-    if x["type"] == "setupMessage":
-        setupMessageParser(x["payload"])
-    elif x["type"] == "commMessage":
-        commMessageParser(x["payload"])
-    elif x["type"] == "endMessage":
-        endMessageParser(x["payload"])
+def handleMessage(x):
+    match x["type"]:
+        case "setupMessage":
+            setupMessageParser(x["payload"])
+        case "commMessage":
+            commMessageParser(x["payload"])
+        case "endMessage":
+            endMessageParser(x["payload"])
 
 
 w = Wrapper()
@@ -43,11 +44,10 @@ def main():
     while True:
         msg = w.receive(False)
         if msg is not None:
-            fromjson(msg)
             ctr += 1
-            print(f"----------------inter:{ctr}----------------")
+            # print(f"----------------inter:{ctr}----------------")
+            handleMessage(msg)
         if ctr == 100:
-            t.profileSave()
             break
         # sleep(0.1)
 

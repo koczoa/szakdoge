@@ -2,7 +2,7 @@ import math
 import os
 import random
 import time
-from typing import Optional
+from typing import Optional, Callable
 import statistics
 import timeit
 
@@ -24,7 +24,22 @@ def heu(a: Field, b: Field) -> float:
     return abs(a.pos.x - b.pos.x) + abs(a.pos.y - b.pos.y)
 
 
-def reconstruct_path(came_from: dict[Field, Optional[Field]], start: Field, goal: Field) -> list[Field]:
+def a_star_search(start: Field, getNeighbours: Callable[[Field], list[Field]], goal: Field) -> list[Field]:
+    frontier = PriorityQueue()
+    frontier.put(start, 0)
+    came_from: dict[Field, Optional[Field]] = {start: None}
+    cost_so_far: dict[Field, float] = {start: 0.0}
+    while not frontier.empty():
+        current: Field = frontier.get()
+        if current == goal:
+            break
+        for next in getNeighbours(current):
+            new_cost = cost_so_far[current] + 1
+            if next not in cost_so_far or new_cost < cost_so_far[next]:
+                cost_so_far[next] = new_cost
+                priority = new_cost + heu(next, goal)
+                frontier.put(next, priority)
+                came_from[next] = current
     current: Field = goal
     path: list[Field] = []
     if goal not in came_from.keys():
@@ -113,13 +128,10 @@ class Team:
         self.messageQueue.append({"id": u.uid, "action": "move", "target": pos})
 
     def moveUnitAStar(self, u: Unit, goal: Field):
-        # print("a*: ")
-        # print(timeit.timeit("self.a_star_search(u, goal)", globals=locals(), number=1))
-        came_from = self.a_star_search(u, goal)
-        # print("rec path: ")
-        # print(timeit.timeit("self.reconstruct_path(came_from, u.currentField, goal)", globals=locals(), number=1))
-        pathTo = reconstruct_path(came_from, u.currentField, goal)
-
+        pathTo = a_star_search(
+            u.currentField,
+            lambda f: [n for n in self.getNeighbours(f) if n.typ in u.steppables],
+            goal)
         if len(pathTo) < 2:
             self.moveUnitDummy(u)
             return
@@ -273,7 +285,7 @@ class Team:
         strongest = enemies[0]  # this should be selected by the unitProfiler
         pos = {"x": strongest.pos.x, "y": strongest.pos.y}
         for u in [u for u in self.units if u.typ != "SCOUT" and u.ammo > 0]:
-            if u.currentField.pos.dist(strongest.pos) > u.shootRange:
+            if u.currentField.pos.dist(strongest.pos) > u.shootRange-1:
                 dest = [f for f in self.seenFields if f.pos == strongest.pos][0]
                 self.moveUnitAStar(u, dest)
             self.messageQueue.append({"id": u.uid, "action": "shoot", "target": pos})
@@ -284,6 +296,8 @@ class Team:
             self.moveUnitAStar(u, random.choice([f for f in selectedMapPart.fields if f.typ in u.steppables]))
 
     def heuristic(self) -> None:
+        if len(self.units) == 0:
+            return
         us = [u for u in self.seenUnits if u.team == self.name]
         them = [u for u in self.seenUnits if u.team != self.name]
         if self.teamProfiler(us) < 0.25:
@@ -297,7 +311,10 @@ class Team:
                 self.conquer(selectedMapPart)
             return
         else:
-            selectedMapPart = [mp for mps in self.mapParts for mp in mps if len(mp.white_uvs) > 0][0]
+            if self.name == "WHITE":
+                selectedMapPart = [mp for mps in self.mapParts for mp in mps if len(mp.red_uvs) > 0][0]
+            else:
+                selectedMapPart = [mp for mps in self.mapParts for mp in mps if len(mp.white_uvs) > 0][0]
             self.attack(selectedMapPart, them)
             return
 
@@ -306,39 +323,5 @@ class Team:
             self.dummyMove()
             self.dummyShoot()
         elif self.strategy == "heuristic":
-            # times.append(timeit.timeit("self.heuristic()", globals=locals(), number=1))
-            # lens.append(len(self.terrainMemory))
-            # print(f"terrain memory len:{len(self.terrainMemory)}, heu:", timeit.timeit("self.heuristic()", globals=locals(), number=1))
             self.heuristic()
         return self.messageQueue
-
-    def a_star_search(self, u: Unit, goal: Field):
-        frontier = PriorityQueue()
-        frontier.put(u.currentField, 0)
-        came_from: dict[Field, Optional[Field]] = {}
-        cost_so_far: dict[Field, float] = {}
-        came_from[u.currentField] = None
-        cost_so_far[u.currentField] = 0
-
-        while not frontier.empty():
-            current: Field = frontier.get()
-
-            if current == goal:
-                break
-
-            for next in [n for n in self.getNeighbours(current) if n.typ in u.steppables]:
-                new_cost = cost_so_far[current] + 1
-                if next not in cost_so_far or new_cost < cost_so_far[next]:
-                    cost_so_far[next] = new_cost
-                    priority = new_cost + heu(next, goal)
-                    frontier.put(next, priority)
-                    came_from[next] = current
-
-        return came_from
-
-
-    def profileSave(self):
-        plt.xlabel("lens")
-        plt.ylabel("times")
-        plt.plot(lens, times)
-        plt.savefig("profiling40.png")

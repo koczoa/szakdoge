@@ -160,7 +160,7 @@ public class Unit {
 	}
 
 	public void updateWorld(MainModel mm) {
-		seenFields = mm.requestFileds(field.pos(), viewRange + 0.5f);
+		seenFields = mm.requestFields(field.pos(), viewRange + 0.5f);
 		seenUnits = mm.requestPerceivedUnits(field.pos(), viewRange + 0.5f);
 		seenControlPoints = mm.requestControlPoints(field.pos(), viewRange + 0.5f);
 	}

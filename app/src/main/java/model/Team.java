@@ -114,7 +114,7 @@ public final class Team {
 		var deadUnit = units.remove(id);
 		deadUnits.put(id, deadUnit);
 		if (units.isEmpty()) {
-			weDead = true;
+			mm.teamLost(this.name);
 		}
 	}
 

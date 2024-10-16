@@ -84,16 +84,17 @@ public class Communicator {
 		var unitsPayload = team.teamMembersToJson();
 		payload.put("units", unitsPayload);
 		payload.put("map", mapDescriptors);
-		var weWon = team.getWeDead();
-		if (!weWon) {
-			message.put("type", "commMessage");
-			message.put("payload", payload);
-		} else {
-			message.put("type", "endMessage");
-			message.put("payload", weWon);
-		}
+		message.put("type", "commMessage");
+		message.put("payload", payload);
 		w.write(message, javaLogLabel);
 		this.state = State.READ;
+	}
+
+	public void end(String winnerName) throws IOException {
+		var message = new JSONObject();
+		message.put("type", "endMessage");
+		message.put("payload", winnerName.equals(this.team.getName()));
+		w.write(message, javaLogLabel);
 	}
 
 	public boolean tick() throws IOException {

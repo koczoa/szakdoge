@@ -28,7 +28,7 @@ public class MainView extends JPanel implements MainModelListener {
     private final Map<ControlPoint, ControlPointView> controlPointViews;
     private final Map<Team, TeamView> teamViews;
 
-    public MainView(int width, int height, float udc, int NoF) {
+    public MainView(int width, int height, float udc, int NoF, int fps) {
         frame = new JFrame("float");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.width = width;
@@ -45,7 +45,7 @@ public class MainView extends JPanel implements MainModelListener {
         this.controlPointViews = new HashMap<>();
         this.teamViews = new HashMap<>();
 
-        Timer looper = new Timer(1000 / 2000, e -> repaint());
+        Timer looper = new Timer(1000 / fps, e -> repaint());
         looper.start();
 
     }

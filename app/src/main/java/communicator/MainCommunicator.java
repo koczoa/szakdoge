@@ -1,7 +1,6 @@
 package communicator;
 
 import model.MainModel;
-import common.MainModelCommunicatorListener;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -9,10 +8,10 @@ import java.nio.channels.ServerSocketChannel;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainCommunicator implements MainModelCommunicatorListener {
+public class MainCommunicator {
 	ServerSocketChannel server;
 	InetSocketAddress address;
-	private final List<Communicator> communictors;
+	private final List<Communicator> communicators;
 	private static final String WHITE = "white";
 	private static final String RED = "red";
 	private final MainModel mm;
@@ -24,7 +23,7 @@ public class MainCommunicator implements MainModelCommunicatorListener {
 		address = new InetSocketAddress("localhost", 6969);
 		server.bind(address);
 		server.configureBlocking(false);
-		communictors = new ArrayList<>();
+		communicators = new ArrayList<>();
 		this.activeIdx = 0;
 	}
 
@@ -32,24 +31,33 @@ public class MainCommunicator implements MainModelCommunicatorListener {
 		var client = server.accept();
 		if (client != null) {
 			client.configureBlocking(false);
-			switch (communictors.size()) {
-				case 0 -> communictors.add(new Communicator(mm.team(WHITE), client,  mm.team(WHITE).getStrategy()));
+			switch (communicators.size()) {
+				case 0 -> communicators.add(new Communicator(mm.team(WHITE), client,  mm.team(WHITE).getStrategy()));
 				case 1 -> {
-					communictors.add(new Communicator(mm.team(RED), client, mm.team(RED).getStrategy()));
-					communictors.get(activeIdx).yourTurn();
+					communicators.add(new Communicator(mm.team(RED), client, mm.team(RED).getStrategy()));
+					communicators.get(activeIdx).yourTurn();
 				}
                 default -> client.close();
 			}
 		}
 		mm.controlPointsUpdate();
-		if (communictors.size() == 2) {
+		if (communicators.size() == 2) {
 			try {
-				if(communictors.get(activeIdx).tick()) {
+				if(communicators.get(activeIdx).tick()) {
 					activeIdx = 1 - activeIdx;
-					communictors.get(activeIdx).yourTurn();
+					if (mm.getWinnerTeam() != null) {
+						for (var comm : communicators) {
+							comm.end(mm.getWinnerTeam().getName());
+							comm.close();
+						}
+						communicators.clear();
+						return false;
+					} else {
+						communicators.get(activeIdx).yourTurn();
+					}
 				}
 			} catch (IOException e) {
-				communictors.get(activeIdx).close();
+				communicators.get(activeIdx).close();
 				return false;
 			}
         }
@@ -59,10 +67,5 @@ public class MainCommunicator implements MainModelCommunicatorListener {
 			throw new RuntimeException(e);
 		}
 		return true;
-	}
-
-	@Override
-	public void teamLost(String name) {
-
 	}
 }
