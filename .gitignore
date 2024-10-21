@@ -8,3 +8,4 @@ python/clients/red
 python/clients/white
 python/clients/test.py
 *.mp4
+*.png
