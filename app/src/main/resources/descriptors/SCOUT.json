@@ -5,7 +5,7 @@
         "MARSH"
     ],
     "maxFuel": 200,
-    "viewRange": 60,
+    "viewRange": 20,
     "maxAmmo": 0,
     "price": 250,
     "maxHealth": 70,

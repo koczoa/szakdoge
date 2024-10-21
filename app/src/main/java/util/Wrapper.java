@@ -40,7 +40,7 @@ public class Wrapper {
 
     public JSONArray read() throws IOException {
         var asdf = sc.read(buffer);
-        System.out.println(asdf + " " + buffer);
+//        System.out.println(asdf + " " + buffer);
         if(buffer.hasRemaining()) {
             return null;
         }

@@ -1,5 +1,4 @@
 import json
-import os
 
 from Field import Field
 
@@ -27,6 +26,7 @@ class Unit:
         desc = json.loads(open(f"/home/kocc/szakdoge/app/src/main/resources/descriptors/{self.typ}.json").read())
         self.steppables = desc["steppables"]
         self.shootRange = desc["shootRange"]
+        self.consumption = desc["consumption"]
 
     def __str__(self):
         return f"id: {self.uid}, type: {self.typ}, field: {self.currentField}"

@@ -1,10 +1,9 @@
 import math
 import os
 import random
+import statistics
 import time
 from typing import Optional, Callable
-import statistics
-import timeit
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -22,6 +21,10 @@ lens = []
 
 def heu(a: Field, b: Field) -> float:
     return abs(a.pos.x - b.pos.x) + abs(a.pos.y - b.pos.y)
+
+
+def heu2(a: Field, b: Field) -> float:
+    return heu(a, b) + random.uniform(-2, 2)
 
 
 def a_star_search(start: Field, getNeighbours: Callable[[Field], list[Field]], goal: Field) -> list[Field]:
@@ -55,7 +58,7 @@ def a_star_search(start: Field, getNeighbours: Callable[[Field], list[Field]], g
 class Team:
     name: str
     strategy: str
-    units: list[Unit]
+    units: dict[int, Unit]
     seenUnits: list[UnitView]
     seenControlPoints: list[ControlPoint]
     seenFields: list[Field]
@@ -72,7 +75,7 @@ class Team:
     def __init__(self, name: str, strategy: str, ms: int):
         self.name = name
         self.strategy = strategy
-        self.units = []
+        self.units = {}
         self.seenUnits = []
         self.seenControlPoints = []
         self.seenFields = []
@@ -93,7 +96,11 @@ class Team:
 
     def addUnits(self, payload: list[any]):
         for i in payload:
-            self.units.append(Unit(i))
+            u = Unit(i)
+            if u.uid not in self.units:
+                self.units[u.uid] = u
+            else:
+                self.units[u.uid].currentField = u.currentField
 
     def updateWorld(self, payload: list[any]):
         for cp in payload["seenControlPoints"]:
@@ -109,7 +116,6 @@ class Team:
             self.seenUnits.append(UnitView(uv))
 
     def clear(self):
-        self.units = []
         self.seenUnits = []
         self.seenFields = []
         self.seenControlPoints = []
@@ -128,15 +134,16 @@ class Team:
         self.messageQueue.append({"id": u.uid, "action": "move", "target": pos})
 
     def moveUnitAStar(self, u: Unit, goal: Field):
-        pathTo = a_star_search(
-            u.currentField,
-            lambda f: [n for n in self.getNeighbours(f) if n.typ in u.steppables],
-            goal)
-        if len(pathTo) < 2:
-            self.moveUnitDummy(u)
-            return
-        self.messageQueue.append(
-            {"id": u.uid, "action": "move", "target": {"x": pathTo[1].pos.x, "y": pathTo[1].pos.y}})
+        if u.fuel - u.consumption > 0:
+            pathTo = a_star_search(
+                u.currentField,
+                lambda f: [n for n in self.getNeighbours(f) if n.typ in u.steppables],
+                goal)
+            if len(pathTo) < 2:
+                self.moveUnitDummy(u)
+            else:
+                self.messageQueue.append(
+                    {"id": u.uid, "action": "move", "target": {"x": pathTo[1].pos.x, "y": pathTo[1].pos.y}})
 
     def getNeighbours(self, fiq: Field) -> list[Field]:
         return [res for (x, y) in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
@@ -170,6 +177,21 @@ class Team:
 
     def autoEncoder(self, save: bool = False, show: bool = False):
         mapData = np.zeros((self.mapSize, self.mapSize), np.int32)
+        # for r in self.terrainMemory:
+        #     for f in r:
+        #         if f is not None:
+        #             match f.typ:
+        #                 case "GRASS":
+        #                     mapData[f.pos.x][f.pos.y] += 1
+        #                 case "WATER":
+        #                     mapData[f.pos.x][f.pos.y] += 2
+        #                 case "MARSH":
+        #                     mapData[f.pos.x][f.pos.y] += 3
+        #                 case "FOREST":
+        #                     mapData[f.pos.x][f.pos.y] += 4
+        #                 case "BUILDING":
+        #                     mapData[f.pos.x][f.pos.y] += 5
+
         for f in self.seenFields:
             match f.typ:
                 case "GRASS":
@@ -220,11 +242,11 @@ class Team:
                 plt.show()
 
     def dummyMove(self) -> None:
-        for u in [u for u in self.units if u.fuel > 0]:
+        for u in [u for u in self.units.values() if u.fuel > 0]:
             self.moveUnitDummy(u)
 
     def dummyShoot(self) -> None:
-        for u in self.units:
+        for u in self.units.values():
             if u.typ == "SCOUT" or u.ammo <= 0:
                 break
             choseOne = random.choice([f for f in self.seenFields if f.pos.dist(u.currentField.pos) < u.shootRange])
@@ -259,40 +281,55 @@ class Team:
         pass
 
     def scouting(self) -> None:
-        scout = [s for s in self.units if s.typ == "SCOUT"][0]
-        x = int(statistics.mean(u.currentField.pos.x for u in self.units))
-        y = int(statistics.mean(u.currentField.pos.y for u in self.units))
-        centerOfMass = [f for f in self.seenFields if f.pos.x == x and f.pos.y == y][0]
-        farthest = scout.currentField
-        if len(self.seenControlPoints) != 0:
-            selectedCp = [cp for cp in self.seenControlPoints][0]
-            farthest = [f for f in self.seenFields if f.pos == selectedCp.pos][0]
-        else:
+        print("scouting")
+        scouts = [s for s in self.units.values() if s.typ == "SCOUT"]
+        if len(scouts) > 0:
+            scout = scouts[0]
+            x = round(statistics.mean(u.currentField.pos.x for u in self.units.values()))
+            y = round(statistics.mean(u.currentField.pos.y for u in self.units.values()))
+            noneFields = [(x, y) for y in range(len(self.terrainMemory))
+                          for x in range(len(self.terrainMemory[y]))
+                          if self.terrainMemory[y][x] is None]
+            notNoneFields = [self.terrainMemory[x][y] for y in range(len(self.terrainMemory))
+                             for x in range(len(self.terrainMemory[y]))
+                             if self.terrainMemory[x][y] is not None]
+            centerOfMass = [f for f in notNoneFields if f.pos.x == x and f.pos.y == y][0]
+            farthest = scout.currentField
+            # if len(self.seenControlPoints) != 0:
+            #     selectedCp = [cp for cp in self.seenControlPoints][0]
+            #     farthest = [f for f in self.seenFields if f.pos == selectedCp.pos][0]
+            # else:
             maxDist = 0
-            for f in self.seenFields:
-                currDist = f.pos.dist(centerOfMass.pos)
+            for f in [sf for sf in notNoneFields if sf.typ in scout.steppables]:
+                # currDist = f.pos.dist(centerOfMass.pos)
+                currDist = heu2(f, centerOfMass)
                 if currDist > maxDist:
                     farthest = f
                     maxDist = currDist
-
-        self.moveUnitAStar(scout, farthest)
+            # print(f"current is {str(scout.currentField)}, farthest is {str(farthest)}, {str(farthest.typ)}")
+            self.moveUnitAStar(scout, farthest)
 
     def conquer(self, mp: MapPart):
-        for u in [u for u in self.units if u.typ != "SCOUT"]:
+        print("conquering")
+        for u in self.units.values():
             self.moveUnitAStar(u, random.choice([f for f in mp.fields if f.typ in u.steppables]))
 
     def attack(self, mp: MapPart, enemies: list[UnitView]):
+        print("attacking")
         strongest = enemies[0]  # this should be selected by the unitProfiler
         pos = {"x": strongest.pos.x, "y": strongest.pos.y}
-        for u in [u for u in self.units if u.typ != "SCOUT" and u.ammo > 0]:
+        for u in [u for u in self.units.values() if u.typ != "SCOUT" and u.ammo > 0]:
             if u.currentField.pos.dist(strongest.pos) > u.shootRange-1:
                 dest = [f for f in self.seenFields if f.pos == strongest.pos][0]
                 self.moveUnitAStar(u, dest)
-            self.messageQueue.append({"id": u.uid, "action": "shoot", "target": pos})
+                # self.conquer(mp)
+            else:
+                self.messageQueue.append({"id": u.uid, "action": "shoot", "target": pos})
 
     def retreat(self):
+        print("retreating")
         selectedMapPart = max((mp for mps in self.mapParts for mp in mps), key=lambda mp: mp.score(self.name))
-        for u in self.units:
+        for u in self.units.values():
             self.moveUnitAStar(u, random.choice([f for f in selectedMapPart.fields if f.typ in u.steppables]))
 
     def heuristic(self) -> None:
@@ -302,21 +339,19 @@ class Team:
         them = [u for u in self.seenUnits if u.team != self.name]
         if self.teamProfiler(us) < 0.25:
             self.retreat()
-            return
-        if len(them) == 0:
-            if self.teamProfiler(us) > 0.8:
-                self.scouting()
-            if len(self.seenControlPoints) > 0:
-                selectedMapPart = [mp for mps in self.mapParts for mp in mps if len(mp.cps) > 0][0]
-                self.conquer(selectedMapPart)
-            return
         else:
-            if self.name == "WHITE":
-                selectedMapPart = [mp for mps in self.mapParts for mp in mps if len(mp.red_uvs) > 0][0]
+            if len(them) == 0:
+                if len(self.seenControlPoints) == 0 or self.teamProfiler(us) > 0.75:
+                    self.scouting()
+                else:
+                    selectedMapPart = [mp for mps in self.mapParts for mp in mps if len(mp.cps) > 0][0]
+                    self.conquer(selectedMapPart)
             else:
-                selectedMapPart = [mp for mps in self.mapParts for mp in mps if len(mp.white_uvs) > 0][0]
-            self.attack(selectedMapPart, them)
-            return
+                if self.name == "WHITE":
+                    selectedMapPart = [mp for mps in self.mapParts for mp in mps if len(mp.red_uvs) > 0][0]
+                else:
+                    selectedMapPart = [mp for mps in self.mapParts for mp in mps if len(mp.white_uvs) > 0][0]
+                self.attack(selectedMapPart, them)
 
     def doAction(self):
         if self.strategy == "dummy":
