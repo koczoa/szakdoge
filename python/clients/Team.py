@@ -135,11 +135,20 @@ class Team:
 
     def moveUnitAStar(self, u: Unit, goal: Field):
         if u.fuel - u.consumption > 0:
+            # steppedByOthersPOS = [uv.pos for uv in self.seenUnits if uv.uid != u.uid]
+            steppedByOthersPOS = [uv.currentField.pos for uv in self.units.values() if uv.uid != u.uid]
+            print(f"unit's pos:{u.currentField.pos}, others: {[str(f) for f in steppedByOthersPOS]}")
+            print(f"{len(steppedByOthersPOS)}")
             pathTo = a_star_search(
                 u.currentField,
-                lambda f: [n for n in self.getNeighbours(f) if n.typ in u.steppables],
+                # TODO: the stepped on fields also should be excluded just like the not steppables
+                lambda f: [n for n in self.getNeighbours(f)
+                           if n.typ in u.steppables
+                           if n.pos not in steppedByOthersPOS
+                           ],
                 goal)
             if len(pathTo) < 2:
+                print(f"{u.uid} doin dummy")
                 self.moveUnitDummy(u)
             else:
                 self.messageQueue.append(
