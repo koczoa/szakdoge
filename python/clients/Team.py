@@ -135,18 +135,13 @@ class Team:
 
     def moveUnitAStar(self, u: Unit, goal: Field):
         if u.fuel - u.consumption > 0:
-            # the problem with this is that the target enemy is on the field which we are trying to get to,
-            # so with this we literally remove the goal field, making the a* unable to get to it
-            # steppedByOthersPOS = [uv.pos for uv in self.seenUnits if uv.uid != u.uid]
-            steppedByOthersPOS = [uv.currentField.pos for uv in self.units.values() if uv.uid != u.uid]
-            # print(f"unit's pos:{u.currentField.pos}, others: {[str(f) for f in steppedByOthersPOS]}")
-            # print(f"{len(steppedByOthersPOS)}")
+
             pathTo = a_star_search(
                 u.currentField,
-                # TODO: the stepped on fields also should be excluded just like the not steppables
                 lambda f: [n for n in self.getNeighbours(f)
                            if n.typ in u.steppables
-                           if n.pos not in steppedByOthersPOS
+                           if n.pos not in [uv.pos for uv in self.seenUnits
+                                            if uv.uid != u.uid and uv.pos != goal.pos]
                            ],
                 goal)
             if len(pathTo) < 2:
