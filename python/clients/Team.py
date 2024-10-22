@@ -141,7 +141,7 @@ class Team:
                 lambda f: [n for n in self.getNeighbours(f)
                            if n.typ in u.steppables
                            if n.pos not in [uv.pos for uv in self.seenUnits
-                                            if uv.uid != u.uid and uv.pos != goal.pos]
+                                            if uv.pos != goal.pos]
                            ],
                 goal)
             if len(pathTo) < 2:
