@@ -47,7 +47,7 @@ def main():
             ctr += 1
             print(f"----------------inter:{ctr}----------------")
             handleMessage(msg)
-        if ctr == 200:
+        if ctr == 400:
             break
         # sleep(0.1)
 

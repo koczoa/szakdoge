@@ -55,6 +55,33 @@ def a_star_search(start: Field, getNeighbours: Callable[[Field], list[Field]], g
     return path
 
 
+def bfs_search(start: Field, getNeighbours: Callable[[Field], list[Field]], goal: Callable[[Field], bool]) -> list[Field]:
+    frontier = PriorityQueue()
+    frontier.put(start, 0)
+    came_from: dict[Field, Optional[Field]] = {start: None}
+    cost_so_far: dict[Field, float] = {start: 0.0}
+    while not frontier.empty():
+        current: Field = frontier.get()
+        if goal(current):
+            break
+        for next in getNeighbours(current):
+            new_cost = cost_so_far[current] + 1
+            if next not in cost_so_far or new_cost < cost_so_far[next]:
+                cost_so_far[next] = new_cost
+                priority = new_cost + 0
+                frontier.put(next, priority)
+                came_from[next] = current
+    path: list[Field] = []
+    if not goal(current):
+        return []
+    while current != start:
+        path.append(current)
+        current = came_from[current]
+    path.append(start)
+    path.reverse()
+    return path
+
+
 class Team:
     name: str
     strategy: str
@@ -135,27 +162,44 @@ class Team:
 
     def moveUnitAStar(self, u: Unit, goal: Field):
         if u.fuel - u.consumption > 0:
-
             pathTo = a_star_search(
                 u.currentField,
                 lambda f: [n for n in self.getNeighbours(f)
+                           if n is not None
                            if n.typ in u.steppables
                            if n.pos not in [uv.pos for uv in self.seenUnits
                                             if uv.pos != goal.pos]
                            ],
                 goal)
             if len(pathTo) < 2:
-                print(f"{u.uid} doin dummy")
                 self.moveUnitDummy(u)
             else:
                 self.messageQueue.append(
-                    {"id": u.uid, "action": "move", "target": {"x": pathTo[1].pos.x, "y": pathTo[1].pos.y}})
+                    {"id": u.uid,
+                     "action": "move",
+                     "target": {"x": pathTo[1].pos.x, "y": pathTo[1].pos.y}})
+
+    def moveUnitBFS(self, u: Unit):
+        if u.fuel - u.consumption > 0:
+            closest_perimeter = bfs_search(
+                u.currentField,
+                lambda f: [n for n in self.getNeighbours(f)
+                           if n is None or n.typ in u.steppables
+                           if n is None or n.pos not in [uv.pos for uv in self.seenUnits]],
+                lambda f: f is None)
+            if len(closest_perimeter) < 2:
+                print(f"{closest_perimeter=}")
+                self.moveUnitDummy(u)
+            else:
+                self.messageQueue.append(
+                    {"id": u.uid,
+                     "action": "move",
+                     "target": {"x": closest_perimeter[1].pos.x, "y": closest_perimeter[1].pos.y}})
 
     def getNeighbours(self, fiq: Field) -> list[Field]:
-        return [res for (x, y) in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
+        return [self.terrainMemory[a][b] for (x, y) in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
                 if 0 <= (a := fiq.pos.x + x) < self.mapSize
-                if 0 <= (b := fiq.pos.y + y) < self.mapSize
-                if (res := self.terrainMemory[a][b]) is not None]
+                if 0 <= (b := fiq.pos.y + y) < self.mapSize]
 
     def intel(self):
         for uv in self.seenUnits:
@@ -183,33 +227,33 @@ class Team:
 
     def autoEncoder(self, save: bool = False, show: bool = False):
         mapData = np.zeros((self.mapSize, self.mapSize), np.int32)
-        # for r in self.terrainMemory:
-        #     for f in r:
-        #         if f is not None:
-        #             match f.typ:
-        #                 case "GRASS":
-        #                     mapData[f.pos.x][f.pos.y] += 1
-        #                 case "WATER":
-        #                     mapData[f.pos.x][f.pos.y] += 2
-        #                 case "MARSH":
-        #                     mapData[f.pos.x][f.pos.y] += 3
-        #                 case "FOREST":
-        #                     mapData[f.pos.x][f.pos.y] += 4
-        #                 case "BUILDING":
-        #                     mapData[f.pos.x][f.pos.y] += 5
+        for r in self.terrainMemory:
+            for f in r:
+                if f is not None:
+                    match f.typ:
+                        case "GRASS":
+                            mapData[f.pos.x][f.pos.y] += 1
+                        case "WATER":
+                            mapData[f.pos.x][f.pos.y] += 2
+                        case "MARSH":
+                            mapData[f.pos.x][f.pos.y] += 3
+                        case "FOREST":
+                            mapData[f.pos.x][f.pos.y] += 4
+                        case "BUILDING":
+                            mapData[f.pos.x][f.pos.y] += 5
 
-        for f in self.seenFields:
-            match f.typ:
-                case "GRASS":
-                    mapData[f.pos.x][f.pos.y] += 1
-                case "WATER":
-                    mapData[f.pos.x][f.pos.y] += 2
-                case "MARSH":
-                    mapData[f.pos.x][f.pos.y] += 3
-                case "FOREST":
-                    mapData[f.pos.x][f.pos.y] += 4
-                case "BUILDING":
-                    mapData[f.pos.x][f.pos.y] += 5
+        # for f in self.seenFields:
+        #     match f.typ:
+        #         case "GRASS":
+        #             mapData[f.pos.x][f.pos.y] += 1
+        #         case "WATER":
+        #             mapData[f.pos.x][f.pos.y] += 2
+        #         case "MARSH":
+        #             mapData[f.pos.x][f.pos.y] += 3
+        #         case "FOREST":
+        #             mapData[f.pos.x][f.pos.y] += 4
+        #         case "BUILDING":
+        #             mapData[f.pos.x][f.pos.y] += 5
 
         # TODO: this could and SHOULD be optimised...
         for u in self.seenUnits:
@@ -301,19 +345,21 @@ class Team:
                              if self.terrainMemory[x][y] is not None]
             centerOfMass = [f for f in notNoneFields if f.pos.x == x and f.pos.y == y][0]
             farthest = scout.currentField
+
             # if len(self.seenControlPoints) != 0:
             #     selectedCp = [cp for cp in self.seenControlPoints][0]
             #     farthest = [f for f in self.seenFields if f.pos == selectedCp.pos][0]
             # else:
-            maxDist = 0
-            for f in [sf for sf in notNoneFields if sf.typ in scout.steppables]:
-                # currDist = f.pos.dist(centerOfMass.pos)
-                currDist = heu2(f, centerOfMass)
-                if currDist > maxDist:
-                    farthest = f
-                    maxDist = currDist
+            # maxDist = 0
+            # for f in [sf for sf in notNoneFields if sf.typ in scout.steppables]:
+            #     # currDist = f.pos.dist(centerOfMass.pos)
+            #     currDist = heu2(f, centerOfMass)
+            #     if currDist > maxDist:
+            #         farthest = f
+            #         maxDist = currDist
             # print(f"current is {str(scout.currentField)}, farthest is {str(farthest)}, {str(farthest.typ)}")
-            self.moveUnitAStar(scout, farthest)
+            # self.moveUnitAStar(scout, closest_perimiter)
+            self.moveUnitBFS(scout)
 
     def conquer(self, mp: MapPart):
         print("conquering")
@@ -322,19 +368,20 @@ class Team:
 
     def attack(self, mp: MapPart, enemies: list[UnitView]):
         print("attacking")
+        # an enemy unit is strongest when it could deal the most damage before the team kills it
         strongest = enemies[0]  # this should be selected by the unitProfiler
+
         pos = {"x": strongest.pos.x, "y": strongest.pos.y}
         for u in [u for u in self.units.values() if u.typ != "SCOUT" and u.ammo > 0]:
-            if u.currentField.pos.dist(strongest.pos) > u.shootRange-1:
-                dest = [f for f in self.seenFields if f.pos == strongest.pos][0]
-                self.moveUnitAStar(u, dest)
-                # self.conquer(mp)
+            if u.currentField.pos.dist(strongest.pos) >= u.shootRange - 1:
+                self.moveUnitAStar(u, random.choice([f for f in mp.fields if f.typ in u.steppables]))
             else:
                 self.messageQueue.append({"id": u.uid, "action": "shoot", "target": pos})
 
     def retreat(self):
         print("retreating")
-        selectedMapPart = max((mp for mps in self.mapParts for mp in mps), key=lambda mp: mp.score(self.name))
+        # selectedMapPart = max((mp for mps in self.mapParts for mp in mps), key=lambda mp: mp.score(self.name))
+        selectedMapPart = max((mp for mps in self.mapParts for mp in mps), key=lambda mp: len(mp.cps))
         for u in self.units.values():
             self.moveUnitAStar(u, random.choice([f for f in selectedMapPart.fields if f.typ in u.steppables]))
 
@@ -353,11 +400,12 @@ class Team:
                     selectedMapPart = [mp for mps in self.mapParts for mp in mps if len(mp.cps) > 0][0]
                     self.conquer(selectedMapPart)
             else:
-                if self.name == "WHITE":
-                    selectedMapPart = [mp for mps in self.mapParts for mp in mps if len(mp.red_uvs) > 0][0]
-                else:
-                    selectedMapPart = [mp for mps in self.mapParts for mp in mps if len(mp.white_uvs) > 0][0]
-                self.attack(selectedMapPart, them)
+                self.scouting()
+                # if self.name == "WHITE":
+                #     selectedMapPart = [mp for mps in self.mapParts for mp in mps if len(mp.red_uvs) > 0][0]
+                # else:
+                #     selectedMapPart = [mp for mps in self.mapParts for mp in mps if len(mp.white_uvs) > 0][0]
+                # self.attack(selectedMapPart, them)
 
     def doAction(self):
         if self.strategy == "dummy":

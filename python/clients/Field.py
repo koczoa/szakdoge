@@ -11,6 +11,8 @@ class Field:
         self.typ = payload["type"]
 
     def __eq__(self, other: Self):
+        if other is None:
+            return False
         return self.pos == other.pos
 
     def __str__(self):
@@ -26,4 +28,6 @@ class Field:
         return self.pos.__hash__()
 
     def __lt__(self, other: Self):
+        if other is None:
+            return False
         return self.pos < other.pos
