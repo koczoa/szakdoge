@@ -15,13 +15,15 @@ def commMessageParser(payload):
     t.updateWorld(payload["map"])
     t.intel()
     if t.strategy != "dummy":
-        t.autoEncoder(save=True)
+        t.autoEncoder(save=False)
     w.send(t.doAction())
     t.clear()
 
 
 def endMessageParser(payload):
     print(payload)
+    if payload:
+        t.saveGame()
     w.close()
     exit()
 

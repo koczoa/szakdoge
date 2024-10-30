@@ -23,7 +23,7 @@ public class MainModel {
 		mapSize = size;
 		controlPoints = new ArrayList<>();
 		teams = new HashMap<>();
-		teams.put(WHITE, new Team(WHITE, "dummy", 5000, this));
+		teams.put(WHITE, new Team(WHITE, "heuristic", 5000, this));
 		teams.put(RED, new Team(RED, "heuristic", 5000, this));
 		listeners = new ArrayList<>();
 		fields = mapGeneratorStrategy.generateMap(size);

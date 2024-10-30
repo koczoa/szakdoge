@@ -1,10 +1,11 @@
+import json
 import math
 import os
 import random
 import statistics
 import time
 from typing import Optional, Callable
-
+from enum import Enum
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -15,8 +16,10 @@ from PriorityQueue import PriorityQueue
 from Unit import Unit
 from UnitView import UnitView
 
-times = []
-lens = []
+
+class TeamColor(Enum):
+    WHITE = "white"
+    RED = "red"
 
 
 def heu(a: Field, b: Field) -> float:
@@ -117,6 +120,10 @@ class Team:
         if self.strategy != "dummy":
             self.folderName = f"replay_{self.name}_{int(time.time() * 1000)}"
             os.mkdir(self.folderName)
+        self.scoutDesc = json.loads(open(f"/home/kocc/szakdoge/app/src/main/resources/descriptors/SCOUT.json").read())
+        self.tankDesc = json.loads(open(f"/home/kocc/szakdoge/app/src/main/resources/descriptors/TANK.json").read())
+        self.infantryDesc = json.loads(open(f"/home/kocc/szakdoge/app/src/main/resources/descriptors/INFANTRY.json").read())
+
 
     def __str__(self):
         return f"teamName: {self.name}, strategy: {self.strategy}, units: {[str(u) for u in self.units]}"
@@ -327,38 +334,28 @@ class Team:
     """
     this method profiles a unit from the team and returns a number between 0 and 1 to report it's general state
     """
-    def unitProfiler(self, u: Unit) -> float:
-        pass
+    def unitProfiler(self, uv: UnitView) -> float:
+        maxHealth, damage, magic_offset = 0, 0, 0
+        match uv.typ:
+            case "TANK":
+                maxHealth = self.tankDesc["maxHealth"]
+                damage = self.tankDesc["damage"]
+                magic_offset = 50
+            case "SCOUT":
+                maxHealth = self.scoutDesc["maxHealth"]
+                damage = self.scoutDesc["damage"]
+                magic_offset = 0
+            case "INFANTRY":
+                maxHealth = self.infantryDesc["maxHealth"]
+                damage = self.infantryDesc["damage"]
+                magic_offset = 25
+        return damage * (uv.health / maxHealth) + magic_offset
 
     def scouting(self) -> None:
         print("scouting")
         scouts = [s for s in self.units.values() if s.typ == "SCOUT"]
         if len(scouts) > 0:
             scout = scouts[0]
-            x = round(statistics.mean(u.currentField.pos.x for u in self.units.values()))
-            y = round(statistics.mean(u.currentField.pos.y for u in self.units.values()))
-            noneFields = [(x, y) for y in range(len(self.terrainMemory))
-                          for x in range(len(self.terrainMemory[y]))
-                          if self.terrainMemory[y][x] is None]
-            notNoneFields = [self.terrainMemory[x][y] for y in range(len(self.terrainMemory))
-                             for x in range(len(self.terrainMemory[y]))
-                             if self.terrainMemory[x][y] is not None]
-            centerOfMass = [f for f in notNoneFields if f.pos.x == x and f.pos.y == y][0]
-            farthest = scout.currentField
-
-            # if len(self.seenControlPoints) != 0:
-            #     selectedCp = [cp for cp in self.seenControlPoints][0]
-            #     farthest = [f for f in self.seenFields if f.pos == selectedCp.pos][0]
-            # else:
-            # maxDist = 0
-            # for f in [sf for sf in notNoneFields if sf.typ in scout.steppables]:
-            #     # currDist = f.pos.dist(centerOfMass.pos)
-            #     currDist = heu2(f, centerOfMass)
-            #     if currDist > maxDist:
-            #         farthest = f
-            #         maxDist = currDist
-            # print(f"current is {str(scout.currentField)}, farthest is {str(farthest)}, {str(farthest.typ)}")
-            # self.moveUnitAStar(scout, closest_perimiter)
             self.moveUnitBFS(scout)
 
     def conquer(self, mp: MapPart):
@@ -369,7 +366,8 @@ class Team:
     def attack(self, mp: MapPart, enemies: list[UnitView]):
         print("attacking")
         # an enemy unit is strongest when it could deal the most damage before the team kills it
-        strongest = enemies[0]  # this should be selected by the unitProfiler
+        # strongest = enemies[0]  # this should be selected by the unitProfiler
+        strongest = max((uv for uv in enemies), key=lambda uv: self.unitProfiler(uv))
 
         pos = {"x": strongest.pos.x, "y": strongest.pos.y}
         for u in [u for u in self.units.values() if u.typ != "SCOUT" and u.ammo > 0]:
@@ -400,12 +398,11 @@ class Team:
                     selectedMapPart = [mp for mps in self.mapParts for mp in mps if len(mp.cps) > 0][0]
                     self.conquer(selectedMapPart)
             else:
-                self.scouting()
-                # if self.name == "WHITE":
-                #     selectedMapPart = [mp for mps in self.mapParts for mp in mps if len(mp.red_uvs) > 0][0]
-                # else:
-                #     selectedMapPart = [mp for mps in self.mapParts for mp in mps if len(mp.white_uvs) > 0][0]
-                # self.attack(selectedMapPart, them)
+                if self.name == "white":
+                    selectedMapPart = [mp for mps in self.mapParts for mp in mps if len(mp.red_uvs) > 0][0]
+                else:
+                    selectedMapPart = [mp for mps in self.mapParts for mp in mps if len(mp.white_uvs) > 0][0]
+                self.attack(selectedMapPart, them)
 
     def doAction(self):
         if self.strategy == "dummy":
@@ -414,3 +411,6 @@ class Team:
         elif self.strategy == "heuristic":
             self.heuristic()
         return self.messageQueue
+
+    def saveGame(self):
+        pass
