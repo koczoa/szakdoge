@@ -7,41 +7,54 @@ from Wrapper import Wrapper
 def setupMessageParser(payload):
     global t
     t = Team(payload["teamName"], payload["strategy"], payload["mapSize"])
-    print("setup:", t)
+    print(f"setup: {t}")
 
 
 def commMessageParser(payload):
     t.addUnits(payload["units"])
     t.updateWorld(payload["map"])
-    print("comm:", t)
-    print(t.plotState())
+    t.intel()
+    if t.strategy != "dummy":
+        t.autoEncoder(save=False)
+    w.send(t.doAction())
     t.clear()
 
 
 def endMessageParser(payload):
-    pass
+    print(payload)
+    if payload:
+        t.saveGame()
+    w.close()
+    exit()
 
 
-def fromjson(x):
-    if x["type"] == "setupMessage":
-        setupMessageParser(x["payload"])
-    elif x["type"] == "commMessage":
-        commMessageParser(x["payload"])
-    elif x["type"] == "endMessage":
-        endMessageParser(x["payload"])
+def handleMessage(x):
+    match x["type"]:
+        case "setupMessage":
+            setupMessageParser(x["payload"])
+        case "commMessage":
+            commMessageParser(x["payload"])
+        case "endMessage":
+            endMessageParser(x["payload"])
 
 
 w = Wrapper()
 
-ctr = 0
-while True:
-    msg = w.receive(False)
-    if msg is not None:
-        # print(f"{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}, d:{msg}")
-        fromjson(msg)
-        ctr += 1
-    if ctr == 2:
-        break
-    sleep(0.05)
 
-w.close()
+def main():
+    ctr = 0
+    while True:
+        msg = w.receive(False)
+        if msg is not None:
+            ctr += 1
+            print(f"----------------inter:{ctr}----------------")
+            handleMessage(msg)
+        if ctr == 400:
+            break
+        # sleep(0.1)
+
+    w.close()
+
+
+if __name__ == "__main__":
+    main()

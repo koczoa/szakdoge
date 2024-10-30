@@ -5,14 +5,14 @@ import common.UnitListener;
 import logger.Label;
 import logger.Log;
 import util.Color;
-
-import org.json.*;
 import util.Triplet;
 
+import org.json.*;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 public class Unit {
 	private static final Path descriptorDir = Path.of("src", "/main/resources/descriptors");
@@ -28,17 +28,17 @@ public class Unit {
 	private UnitListener listener;
 
 	private int health;
-	private int maxHealth;
-	private int viewRange;
-	private int shootRange;
-	private int damage;
+	private final int maxHealth;
+	private final int viewRange;
+	private final int shootRange;
+	private final int damage;
 	private int ammo;
-	private int maxAmmo;
+	private final int maxAmmo;
 	private int fuel;
-	private int maxFuel;
-	private int consumption;
-	private int price;
-	private int maxActionPoints;
+	private final int maxFuel;
+	private final int consumption;
+	private final int price;
+	private final int maxActionPoints;
 	private int actionPoints;
 	private final Position startingPos;
 	private final Label javaLogLabel;
@@ -46,9 +46,9 @@ public class Unit {
 	private static int idCounter = 0;
 
 	public enum Type {
-		SCOUT("SCOUT"),
-		TANK("TANK"),
-		INFANTRY("INFANTRY");
+		SCOUT("SCOUT.json"),
+		TANK("TANK.json"),
+		INFANTRY("INFANTRY.json");
 
 		public final Path path;
 
@@ -60,28 +60,32 @@ public class Unit {
 	public Unit(Field f, Team team, Type type) {
 		seenFields = new ArrayList<>();
 		seenUnits = new ArrayList<>();
-		steppableTypes = new ArrayList<>();
+//		steppableTypes = new ArrayList<>();
 		id = idCounter++;
 		setField(f);
 		this.team = team;
 		team.addUnit(this);
 		this.type = type;
 		this.startingPos = f.pos();
-		try (Scanner sc = new Scanner(descriptorDir.resolve(type.path))) {
-			maxHealth = Integer.parseInt(sc.nextLine());
-			viewRange = Integer.parseInt(sc.nextLine());
-			shootRange = Integer.parseInt(sc.nextLine());
-			damage = Integer.parseInt(sc.nextLine());
-			maxAmmo = Integer.parseInt(sc.nextLine());
-			maxFuel = Integer.parseInt(sc.nextLine());
-			consumption = Integer.parseInt(sc.nextLine());
-			maxActionPoints = Integer.parseInt(sc.nextLine());
-			price = Integer.parseInt(sc.nextLine());
-			steppableTypes.add(Field.Type.valueOf(sc.nextLine()));
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		health = maxHealth;
+		JSONObject xd;
+        try {
+             xd = new JSONObject(Files.readString(descriptorDir.resolve(type.path)));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+		maxHealth = xd.getInt("maxHealth");
+		viewRange = xd.getInt("viewRange");
+		shootRange = xd.getInt("shootRange");
+		damage = xd.getInt("damage");
+		maxAmmo = xd.getInt("maxAmmo");
+		maxFuel = xd.getInt("maxFuel");
+		consumption = xd.getInt("consumption");
+		maxActionPoints = xd.getInt("maxActionPoints");
+		price = xd.getInt("price");
+		steppableTypes = xd.getJSONArray("steppables").toList().stream().map(o -> Field.Type.valueOf((String)o)).toList();
+
+        health = maxHealth;
 		ammo = maxAmmo;
 		fuel = maxFuel;
 		actionPoints = maxActionPoints;
@@ -95,18 +99,23 @@ public class Unit {
 	public void move(Field dest) {
 		if (actionPoints <= 0) {
 			Log.e(javaLogLabel,this.id + "id: out of actionPoints");
+			return;
 		}
 		if (fuel < consumption) {
 			Log.e(javaLogLabel,this.id + "id: out of fuel");
+			return;
 		}
 		if (!field.isNeighbouring(dest)) {
 			Log.e(javaLogLabel,this.id + "id: move not neighbouring: curr: " + this.field.pos().toString() + ", dest: " + dest);
+			return;
 		}
 		if (!steppableTypes.contains(dest.type())) {
 			Log.e(javaLogLabel,this.id + "id: dest not steppable");
+			return;
 		}
 		if (!dest.arrive(this)) {
 			Log.e(javaLogLabel,this.id + "id: dest occupied");
+			return;
 		}
 		if (dest == field) {
 			return;
@@ -114,18 +123,21 @@ public class Unit {
 		field.leave();
 		field = dest;
 		fuel -= consumption;
-		actionPoints--;
+//		actionPoints--;
 	}
 
 	public void shoot(Field target) {
 		if (actionPoints <= 0) {
 			Log.e(javaLogLabel,this.id + "id: out of actionPoints");
+			return;
 		}
 		if (ammo <= 0) {
 			Log.e(javaLogLabel,this.id + "id: out of ammo");
+			return;
 		}
 		if (!field.inDistance(target, shootRange + 0.5f)) {
 			Log.e(javaLogLabel,this.id + "id: out of range");
+			return;
 		}
 
 		target.takeShot(damage);
@@ -133,7 +145,7 @@ public class Unit {
 			listener.onShoot(target.pos());
 		}
 		ammo--;
-		actionPoints--;
+//		actionPoints--;
 	}
 
 	public void takeShot(int damage) {
@@ -148,7 +160,7 @@ public class Unit {
 	}
 
 	public void updateWorld(MainModel mm) {
-		seenFields = mm.requestFileds(field.pos(), viewRange + 0.5f);
+		seenFields = mm.requestFields(field.pos(), viewRange + 0.5f);
 		seenUnits = mm.requestPerceivedUnits(field.pos(), viewRange + 0.5f);
 		seenControlPoints = mm.requestControlPoints(field.pos(), viewRange + 0.5f);
 	}
@@ -267,5 +279,18 @@ public class Unit {
 		}
 		f.arrive(this);
 		this.field = f;
+	}
+
+	@Override
+	public int hashCode() {
+		return this.id;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		Unit that = (Unit) o;
+		return id == that.id;
 	}
 }

@@ -7,7 +7,7 @@ import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 
 public class TeamView {
-    private Team team;
+    private final Team team;
 
     public TeamView(Team t) {
         this.team = t;
@@ -26,7 +26,6 @@ public class TeamView {
                 y += 20;
             }
             y += 50;
-//            g2d.fill(new Rectangle2D.Float(x, y, 5, 5));
         }
         g2d.setFont(oldFont);
     }

@@ -17,17 +17,14 @@ public class MainModel {
 	private final List<MainModelListener> listeners;
 	private static final String WHITE = "white";
 	private static final String RED = "red";
-	private MainModelCommunicatorListener mmcl;
+	private Team winnerTeam;
 
 	private MainModel(int size, MapGeneratorStrategy mapGeneratorStrategy) {
 		mapSize = size;
 		controlPoints = new ArrayList<>();
 		teams = new HashMap<>();
-		//TODO: refactor!!!
-		Team whiteTeam = new Team(WHITE, "sarlMove", 5000, this);
-		Team redTeam = new Team(RED, "dummy", 5000, this);
-		teams.put(WHITE, whiteTeam);
-		teams.put(RED, redTeam);
+		teams.put(WHITE, new Team(WHITE, "heuristic", 5000, this));
+		teams.put(RED, new Team(RED, "heuristic", 5000, this));
 		listeners = new ArrayList<>();
 		fields = mapGeneratorStrategy.generateMap(size);
 	}
@@ -38,21 +35,24 @@ public class MainModel {
 
 	public void placeDefaultUnits() {
 		//TODO: rework this
-		new Unit(fields.get(new Position(40, 50)), teams.get(WHITE), Unit.Type.SCOUT);
-		new Unit(fields.get(new Position(0, 0)), teams.get(RED), Unit.Type.SCOUT);
-		new Unit(fields.get(new Position(40, 40)), teams.get(RED), Unit.Type.SCOUT);
-		new Unit(fields.get(new Position(5, 5)), teams.get(RED), Unit.Type.TANK);
-		new Unit(fields.get(new Position(7, 3)), teams.get(WHITE), Unit.Type.TANK);
-		new Unit(fields.get(new Position(38, 25)), teams.get(RED), Unit.Type.TANK);
-		new Unit(fields.get(new Position(37, 20)), teams.get(WHITE), Unit.Type.TANK);
-		new Unit(fields.get(new Position(38, 21)), teams.get(WHITE), Unit.Type.TANK);
-		new Unit(fields.get(new Position(38, 22)), teams.get(WHITE), Unit.Type.INFANTRY);
+		new Unit(fields.get(new Position(0, 0)), teams.get(WHITE), Unit.Type.TANK);
+		new Unit(fields.get(new Position(3, 2)), teams.get(WHITE), Unit.Type.TANK);
+		new Unit(fields.get(new Position(5, 5)), teams.get(WHITE), Unit.Type.TANK);
+		new Unit(fields.get(new Position(3, 4)), teams.get(WHITE), Unit.Type.INFANTRY);
+		new Unit(fields.get(new Position(4, 5)), teams.get(WHITE), Unit.Type.SCOUT);
+
+		new Unit(fields.get(new Position(mapSize - 1, mapSize - 1)), teams.get(RED), Unit.Type.TANK);
+		new Unit(fields.get(new Position(mapSize - 4, mapSize - 2)), teams.get(RED), Unit.Type.TANK);
+		new Unit(fields.get(new Position(mapSize - 6, mapSize - 1)), teams.get(RED), Unit.Type.TANK);
+		new Unit(fields.get(new Position(mapSize - 3 , mapSize - 2)), teams.get(RED), Unit.Type.INFANTRY);
+		new Unit(fields.get(new Position(mapSize - 1, mapSize - 4)), teams.get(RED), Unit.Type.SCOUT);
 	}
 
 	public void placeDefaultControlPoints() {
 		//TODO: rework this
-		controlPoints.add(new ControlPoint(new Position(40, 50), 10, 3, this));
-		controlPoints.add(new ControlPoint(new Position(1, 5), 10, 2, this));
+		controlPoints.add(new ControlPoint(new Position(30, 30), 10, 4, this));
+		controlPoints.add(new ControlPoint(new Position(40, 20), 20, 2, this));
+		controlPoints.add(new ControlPoint(new Position(20, 40), 20, 2, this));
 
 	}
 
@@ -73,10 +73,6 @@ public class MainModel {
 		for (var t : teams.values()) {
 			mml.teamCreated(t);
 		}
-	}
-
-	public void addListener(MainModelCommunicatorListener mmcl) {
-		this.mmcl = mmcl;
 	}
 
 	public void removeListener(MainModelListener mml) {
@@ -115,10 +111,10 @@ public class MainModel {
 		return view;
 	}
 
-	public List<Field> requestFileds(Position pos, float size) {
+	public List<Field> requestFields(Position pos, float size) {
 		var view = new ArrayList<Field>();
 		fields.forEach((p, f) -> {
-			if (pos.inDistance(p, size) && pos.hashCode() != p.hashCode()) {
+			if (pos.inDistance(p, size)) {
 				view.add(f);
 			}
 		});
@@ -131,10 +127,6 @@ public class MainModel {
 		}
 	}
 
-	public void teamLost(String name) {
-
-	}
-
 	public Field getField(Position pos) {
 		return fields.get(pos);
 	}
@@ -143,7 +135,14 @@ public class MainModel {
 		return mapSize;
 	}
 
-	public List<Team> getTeams() {
-		return new ArrayList<>(teams.values());
+	public void teamLost(String teamName) {
+		teams.remove(teamName);
+		if(teams.size() == 1) {
+			winnerTeam = teams.values().iterator().next();
+		}
+	}
+
+	public Team getWinnerTeam() {
+		return this.winnerTeam;
 	}
 }

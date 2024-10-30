@@ -1,15 +1,18 @@
 from Pos import Pos
+from typing import Self
 
 
 class Field:
     pos: Pos
-    type: str
+    typ: str
 
     def __init__(self, payload):
         self.pos = Pos(payload["pos"])
-        self.type = payload["type"]
+        self.typ = payload["type"]
 
-    def __eq__(self, other):
+    def __eq__(self, other: Self):
+        if other is None:
+            return False
         return self.pos == other.pos
 
     def __str__(self):
@@ -19,4 +22,12 @@ class Field:
         return self.pos.val()
 
     def getType(self):
-        return self.type
+        return self.typ
+
+    def __hash__(self):
+        return self.pos.__hash__()
+
+    def __lt__(self, other: Self):
+        if other is None:
+            return False
+        return self.pos < other.pos

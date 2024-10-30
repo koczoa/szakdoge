@@ -17,7 +17,7 @@ class Wrapper:
         self.buffer = b''
         self.bufferSize = 4
 
-    def receive(self, log : bool):
+    def receive(self, log: bool):
         try:
             tmpBuffer = self.sock.recv(self.bufferSize - len(self.buffer))
         except BlockingIOError:

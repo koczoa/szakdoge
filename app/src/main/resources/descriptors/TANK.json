@@ -1,0 +1,15 @@
+{
+    "damage": 30,
+    "steppables": [
+      "GRASS",
+      "MARSH"
+    ],
+    "maxFuel": 300,
+    "viewRange": 8,
+    "maxAmmo": 6,
+    "price": 400,
+    "maxHealth": 80,
+    "shootRange": 7,
+    "consumption": 5,
+    "maxActionPoints": 2
+}

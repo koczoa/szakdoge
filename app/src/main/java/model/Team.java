@@ -14,6 +14,7 @@ public final class Team {
 	private final HashMap<Integer, Unit> deadUnits;
 	private final int budget;
 	private final MainModel mm;
+	private boolean weDead = false;
 	Random rand = new Random();
 
 	public Team(String name, String strategy, int budget, MainModel mm) {
@@ -71,7 +72,7 @@ public final class Team {
 	public List<PerceivedUnit> requestPerceivedUnits(Position pos, float size) {
 		var view = new ArrayList<PerceivedUnit>();
 		units.forEach((id, u) -> {
-			if (pos.inDistance(u.pos(), size) && u.pos() != pos) {
+			if (pos.inDistance(u.pos(), size)) {
 				view.add(u.getPerception());
 			}
 		});
@@ -113,7 +114,7 @@ public final class Team {
 		var deadUnit = units.remove(id);
 		deadUnits.put(id, deadUnit);
 		if (units.isEmpty()) {
-			mm.teamLost(name);
+			mm.teamLost(this.name);
 		}
 	}
 
@@ -129,6 +130,11 @@ public final class Team {
 		units.forEach((id, u) -> res.add(u.toJSON()));
 		return res;
 	}
+
+	public boolean getWeDead() {
+		return weDead;
+	}
+
 
 	public JSONObject toMerge() {
 		var sumSeenFields = new HashSet<Field>();

@@ -25,4 +25,17 @@ public final class PerceivedUnit {
 	public JSONObject toJSON() {
 		return new JSONObject().put("pos", this.pos.toJSON()).put("team", team).put("type", type).put("id", id).put("health", health);
 	}
+
+	@Override
+	public int hashCode() {
+		return this.id;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		PerceivedUnit that = (PerceivedUnit) o;
+		return id == that.id;
+	}
 }

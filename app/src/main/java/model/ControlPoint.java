@@ -4,10 +4,7 @@ import common.ControlPointListener;
 import org.json.JSONObject;
 import util.Color;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class ControlPoint {
 	private final Position pos;
@@ -82,6 +79,9 @@ public class ControlPoint {
 
 	public void updateNearbyUnits() {
 		boolean twoContolrTeams;
+		//this could be reworked to work with percievedUnits as well, but then the PercievedUnits should store the unit
+		//the perviecedUnit literally should be an another view, or even better, an interface, and i could
+
 		var seenUnits = mm.requestUnits(pos, size + 0.5f);
 		if (!seenUnits.isEmpty()) {
 			var unitCount = countUnits(seenUnits);
@@ -128,4 +128,16 @@ public class ControlPoint {
 		return new JSONObject().put("id", this.id).put("pos", this.pos.toJSON()).put("size", this.size).put("percentage", this.percentage);
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		ControlPoint that = (ControlPoint) o;
+		return id == that.id;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hashCode(id);
+	}
 }

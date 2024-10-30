@@ -1,5 +1,6 @@
 from Pos import Pos
 
+
 class UnitView:
     pos: Pos
     uid: int
