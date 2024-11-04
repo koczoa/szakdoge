@@ -3,10 +3,8 @@ package model;
 import common.*;
 import common.map_generation.MapGeneratorStrategy;
 import common.map_generation.SimplexMapGeneratorStrategy;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 
 public class MainModel {
 	//measured in fields
@@ -18,6 +16,7 @@ public class MainModel {
 	private static final String WHITE = "white";
 	private static final String RED = "red";
 	private Team winnerTeam;
+	private final Random r;
 
 	private MainModel(int size, MapGeneratorStrategy mapGeneratorStrategy) {
 		mapSize = size;
@@ -27,6 +26,7 @@ public class MainModel {
 		teams.put(RED, new Team(RED, "heuristic", 5000, this));
 		listeners = new ArrayList<>();
 		fields = mapGeneratorStrategy.generateMap(size);
+		r = new Random();
 	}
 
 	public MainModel(int size) {
@@ -46,6 +46,49 @@ public class MainModel {
 		new Unit(fields.get(new Position(mapSize - 6, mapSize - 1)), teams.get(RED), Unit.Type.TANK);
 		new Unit(fields.get(new Position(mapSize - 3 , mapSize - 2)), teams.get(RED), Unit.Type.INFANTRY);
 		new Unit(fields.get(new Position(mapSize - 1, mapSize - 4)), teams.get(RED), Unit.Type.SCOUT);
+	}
+
+	public void placeRandomUnits(int size) {
+		boolean[][] spawnable = new boolean[size][size];
+		for (int i = 1; i < size-1; i++) {
+			for (int j = 1; j < size-1; j++) {
+				if(fields.get(new Position(i, j)).type().equals(Field.Type.GRASS) &&
+						fields.get(new Position(i-1, j-1)).type().equals(Field.Type.GRASS) &&
+						fields.get(new Position(i-1, j)).type().equals(Field.Type.GRASS) &&
+						fields.get(new Position(i-1, j+1)).type().equals(Field.Type.GRASS) &&
+						fields.get(new Position(i, j-1)).type().equals(Field.Type.GRASS) &&
+						fields.get(new Position(i, j+1)).type().equals(Field.Type.GRASS) &&
+						fields.get(new Position(i+1, j-1)).type().equals(Field.Type.GRASS) &&
+						fields.get(new Position(i+1, j)).type().equals(Field.Type.GRASS) &&
+						fields.get(new Position(i+1, j+1)).type().equals(Field.Type.GRASS)) {
+					spawnable[i][j] = true;
+				}
+			}
+		}
+		var randomX = 0;
+		var randomY = 0;
+        do {
+            randomX = r.nextInt(1, size - 1);
+            randomY = r.nextInt(1, size - 1);
+        } while (!spawnable[randomX][randomY]);
+		new Unit(fields.get(new Position(randomX+1, randomY)), teams.get(WHITE), Unit.Type.TANK);
+		new Unit(fields.get(new Position(randomX, randomY+1)), teams.get(WHITE), Unit.Type.TANK);
+		new Unit(fields.get(new Position(randomX-1, randomY)), teams.get(WHITE), Unit.Type.INFANTRY);
+		new Unit(fields.get(new Position(randomX, randomY)), teams.get(WHITE), Unit.Type.SCOUT);
+		new Unit(fields.get(new Position(randomX, randomY-1)), teams.get(WHITE), Unit.Type.TANK);
+
+		spawnable[randomX][randomY] = false;
+
+		do {
+			randomX = r.nextInt(1, size - 1);
+			randomY = r.nextInt(1, size - 1);
+		} while (!spawnable[randomX][randomY]);
+
+		new Unit(fields.get(new Position(randomX, randomY-1)), teams.get(RED), Unit.Type.TANK);
+		new Unit(fields.get(new Position(randomX+1, randomY)), teams.get(RED), Unit.Type.TANK);
+		new Unit(fields.get(new Position(randomX, randomY+1)), teams.get(RED), Unit.Type.TANK);
+		new Unit(fields.get(new Position(randomX-1, randomY)), teams.get(RED), Unit.Type.INFANTRY);
+		new Unit(fields.get(new Position(randomX, randomY)), teams.get(RED), Unit.Type.SCOUT);
 	}
 
 	public void placeDefaultControlPoints() {
