@@ -6,10 +6,7 @@ from Wrapper import Wrapper
 
 def setupMessageParser(payload):
     global t
-    t = Team(payload["teamName"],
-             payload["strategy"],
-             payload["mapSize"],
-             save=False)
+    t = Team(payload["teamName"], payload["strategy"], payload["mapSize"])
     print(f"setup: {t}")
 
 
@@ -18,7 +15,7 @@ def commMessageParser(payload):
     t.updateWorld(payload["map"])
     t.intel()
     if t.strategy != "dummy":
-        t.autoEncoder()
+        t.autoEncoder(save=False)
     w.send(t.doAction())
     t.clear()
 
@@ -50,10 +47,9 @@ def main():
         msg = w.receive(False)
         if msg is not None:
             ctr += 1
-            # print(f"----------------inter:{ctr}----------------")
+            print(f"----------------inter:{ctr}----------------")
             handleMessage(msg)
-        if ctr == 200:
-            print("max inter reached")
+        if ctr == 400:
             break
         # sleep(0.1)
 

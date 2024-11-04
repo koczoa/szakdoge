@@ -10,8 +10,7 @@ import java.io.IOException;
 public class Main {
 	public static void main(String[] args) throws IOException {
 		MainModel mm = new MainModel(60);
-//		mm.placeDefaultUnits();
-		mm.placeRandomUnits(60);
+		mm.placeDefaultUnits();
 		mm.placeDefaultControlPoints();
 		MainCommunicator mc = new MainCommunicator(mm);
 		if (args.length >= 1 && args[0].equals("graf")) {

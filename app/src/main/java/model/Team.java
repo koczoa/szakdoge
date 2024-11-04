@@ -90,7 +90,7 @@ public final class Team {
 
 	public void fireUnit(int id, Position newPos) {
 		double spreadChance = rand.nextDouble();
-		if (spreadChance > 0.9) {
+		if (spreadChance > 0.75) {
 			newPos = new Position(newPos.x() + 2 * rand.nextInt(2) - 1, newPos.y() + 2 * rand.nextInt(2) - 1);
 		}
 		var newField = mm.getField(newPos);
