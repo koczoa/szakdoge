@@ -9,7 +9,7 @@ def setupMessageParser(payload):
     t = Team(payload["teamName"],
              payload["strategy"],
              payload["mapSize"],
-             save=True)
+             save=False)
     print(f"setup: {t}")
 
 
@@ -50,9 +50,10 @@ def main():
         msg = w.receive(False)
         if msg is not None:
             ctr += 1
-            print(f"----------------inter:{ctr}----------------")
+            # print(f"----------------inter:{ctr}----------------")
             handleMessage(msg)
         if ctr == 200:
+            print("max inter reached")
             break
         # sleep(0.1)
 

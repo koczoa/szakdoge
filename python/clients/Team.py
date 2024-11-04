@@ -119,9 +119,9 @@ class Team:
         if self.strategy != "dummy" and save:
             self.folderName = f"replay_{self.name}_{int(time.time() * 1000)}"
             os.mkdir(self.folderName)
-        self.scoutDesc = json.loads(open("/home/kocc/szakdoge/app/src/main/resources/descriptors/SCOUT.json").read())
-        self.tankDesc = json.loads(open("/home/kocc/szakdoge/app/src/main/resources/descriptors/TANK.json").read())
-        self.infantryDesc = json.loads(open("/home/kocc/szakdoge/app/src/main/resources/descriptors/INFANTRY.json").read())
+        self.scoutDesc = json.loads(open("../../app/src/main/resources/descriptors/SCOUT.json").read())
+        self.tankDesc = json.loads(open("../../app/src/main/resources/descriptors/TANK.json").read())
+        self.infantryDesc = json.loads(open("../../app/src/main/resources/descriptors/INFANTRY.json").read())
         self.history = []
         self.mapData = np.zeros((self.mapSize, self.mapSize), np.int32)
         self.save = save
@@ -136,6 +136,9 @@ class Team:
                 self.units[u.uid] = u
             else:
                 self.units[u.uid].currentField = u.currentField
+                self.units[u.uid].ammo = u.ammo
+                self.units[u.uid].health = u.health
+                self.units[u.uid].fuel = u.fuel
 
     def updateWorld(self, payload: list[any]):
         for cp in payload["seenControlPoints"]:
@@ -161,12 +164,15 @@ class Team:
         return f"sf: {[str(f) for f in self.seenFields]} \n su: {[str(u) for u in self.seenUnits]}"
 
     def moveUnitDummy(self, u: Unit):
-        choseOne = random.choice([n for n in self.getNeighbours(u.currentField) if n.typ in u.steppables])
-        if choseOne is not None:
-            pos = {"x": choseOne.pos.x, "y": choseOne.pos.y}
-        else:
-            pos = {"x": u.currentField.pos.x, "y": u.currentField.pos.y}
-        self.messageQueue.append({"id": u.uid, "action": "move", "target": pos})
+        if u.fuel - u.consumption > 0:
+            choseOne = random.choice([n for n in self.getNeighbours(u.currentField)
+                                      if n.typ in u.steppables
+                                      if n.pos not in [uv.pos for uv in self.seenUnits]])
+            if choseOne is not None:
+                pos = {"x": choseOne.pos.x, "y": choseOne.pos.y}
+            else:
+                pos = {"x": u.currentField.pos.x, "y": u.currentField.pos.y}
+            self.messageQueue.append({"id": u.uid, "action": "move", "target": pos})
 
     def moveUnitAStar(self, u: Unit, goal: Field):
         if goal is None:
@@ -270,28 +276,28 @@ class Team:
             if u.team == self.name:
                 match u.typ:
                     case "TANK":
-                        self.mapData[u.pos.x][u.pos.y] += 6
+                        self.mapData[u.pos.x][u.pos.y] += 106
                     case "INFANTRY":
-                        self.mapData[u.pos.x][u.pos.y] += 7
+                        self.mapData[u.pos.x][u.pos.y] += 107
                     case "SCOUT":
-                        self.mapData[u.pos.x][u.pos.y] += 8
+                        self.mapData[u.pos.x][u.pos.y] += 108
             else:
                 match u.typ:
                     case "TANK":
-                        self.mapData[u.pos.x][u.pos.y] += 9
+                        self.mapData[u.pos.x][u.pos.y] += 199
                     case "INFANTRY":
-                        self.mapData[u.pos.x][u.pos.y] += 10
+                        self.mapData[u.pos.x][u.pos.y] += 199
                     case "SCOUT":
-                        self.mapData[u.pos.x][u.pos.y] += 11
+                        self.mapData[u.pos.x][u.pos.y] += 199
 
         for cp in self.seenControlPoints:
-            self.mapData[cp.pos.x][cp.pos.y] += 12
+            self.mapData[cp.pos.x][cp.pos.y] += 50
 
         if self.save:
             plt.clf()
             toPlt = np.transpose(self.mapData)
             plt.title(self.name)
-            plt.imshow(toPlt, cmap='grey', interpolation='none', vmin=0, vmax=27)
+            plt.imshow(toPlt, cmap='grey', interpolation='none', vmin=0, vmax=255)
             plt.colorbar()
             plt.draw()
             plt.ioff()
@@ -355,23 +361,22 @@ class Team:
         return damage * (uv.health / maxHealth) + magic_offset
 
     def scouting(self) -> None:
-        print("scouting")
+        # print("scouting")
         scouts = [s for s in self.units.values() if s.typ == "SCOUT"]
         if len(scouts) > 0:
             scout = scouts[0]
             self.moveUnitBFS(scout)
 
     def conquer(self, mp: MapPart):
-        print("conquering")
+        # print("conquering")
         for u in self.units.values():
             self.moveUnitAStar(u, random.choice([f for f in mp.fields if f.typ in u.steppables]))
 
     def attack(self, mp: MapPart, enemies: list[UnitView]):
-        print("attacking")
+        # print("attacking")
         # an enemy unit is strongest when it could deal the most damage before the team kills it
         # strongest = enemies[0]  # this should be selected by the unitProfiler
         strongest = max((uv for uv in enemies), key=lambda uv: self.unitProfiler(uv))
-
         pos = {"x": strongest.pos.x, "y": strongest.pos.y}
         for u in [u for u in self.units.values() if u.typ != "SCOUT" and u.ammo > 0]:
             if u.currentField.pos.dist(strongest.pos) >= u.shootRange - 1:
@@ -380,14 +385,18 @@ class Team:
                 except IndexError:
                     self.moveUnitDummy(u)
             else:
-                self.messageQueue.append({"id": u.uid, "action": "shoot", "target": pos})
+                if u.ammo > 1:
+                    self.messageQueue.append({"id": u.uid, "action": "shoot", "target": pos})
 
     def retreat(self):
-        print("retreating")
+        # print("retreating")
         # selectedMapPart = max((mp for mps in self.mapParts for mp in mps), key=lambda mp: mp.score(self.name))
         selectedMapPart = max((mp for mps in self.mapParts for mp in mps), key=lambda mp: len(mp.cps))
         for u in self.units.values():
-            self.moveUnitAStar(u, random.choice([f for f in selectedMapPart.fields if f.typ in u.steppables]))
+            try:
+                self.moveUnitAStar(u, random.choice([f for f in selectedMapPart.fields if f.typ in u.steppables]))
+            except IndexError:
+                self.moveUnitDummy(u)
 
     def heuristic(self) -> None:
         if len(self.units) == 0:

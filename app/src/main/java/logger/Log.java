@@ -39,7 +39,7 @@ public final class Log {
 	}
 
 	public static synchronized void d(Label label, String message) {
-		logger.debug(label, message);
+		//logger.debug(label, message);
 	}
 
 	public static synchronized void i(Label label, String message) {
