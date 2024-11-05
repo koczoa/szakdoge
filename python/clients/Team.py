@@ -424,9 +424,9 @@ class Team:
                 choice = 3
         toHist = self.mapData.flatten()
         a = random.random()
-        if a < 0.25:
+        if a < 0.34:
             toHist = np.transpose(toHist)
-        elif 0.25 <= a < 0.5:
+        elif 0.34 <= a < 0.64:
             toHist = np.flip(toHist)
         self.history.append([choice] + toHist.tolist())
 
