@@ -16,9 +16,6 @@ def setupMessageParser(payload):
 def commMessageParser(payload):
     t.addUnits(payload["units"])
     t.updateWorld(payload["map"])
-    t.intel()
-    if t.strategy != "dummy":
-        t.autoEncoder()
     w.send(t.doAction())
     t.clear()
 

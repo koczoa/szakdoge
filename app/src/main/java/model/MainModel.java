@@ -3,6 +3,7 @@ package model;
 import common.*;
 import common.map_generation.MapGeneratorStrategy;
 import common.map_generation.SimplexMapGeneratorStrategy;
+import util.Tuplet;
 
 import java.util.*;
 
@@ -41,6 +42,8 @@ public class MainModel {
 		new Unit(fields.get(new Position(3, 4)), teams.get(WHITE), Unit.Type.INFANTRY);
 		new Unit(fields.get(new Position(4, 5)), teams.get(WHITE), Unit.Type.SCOUT);
 
+
+
 		new Unit(fields.get(new Position(mapSize - 1, mapSize - 1)), teams.get(RED), Unit.Type.TANK);
 		new Unit(fields.get(new Position(mapSize - 4, mapSize - 2)), teams.get(RED), Unit.Type.TANK);
 		new Unit(fields.get(new Position(mapSize - 6, mapSize - 1)), teams.get(RED), Unit.Type.TANK);
@@ -48,47 +51,27 @@ public class MainModel {
 		new Unit(fields.get(new Position(mapSize - 1, mapSize - 4)), teams.get(RED), Unit.Type.SCOUT);
 	}
 
-	public void placeRandomUnits(int size) {
-		boolean[][] spawnable = new boolean[size][size];
-		for (int i = 1; i < size-1; i++) {
-			for (int j = 1; j < size-1; j++) {
-				if(fields.get(new Position(i, j)).type().equals(Field.Type.GRASS) &&
-						fields.get(new Position(i-1, j-1)).type().equals(Field.Type.GRASS) &&
-						fields.get(new Position(i-1, j)).type().equals(Field.Type.GRASS) &&
-						fields.get(new Position(i-1, j+1)).type().equals(Field.Type.GRASS) &&
-						fields.get(new Position(i, j-1)).type().equals(Field.Type.GRASS) &&
-						fields.get(new Position(i, j+1)).type().equals(Field.Type.GRASS) &&
-						fields.get(new Position(i+1, j-1)).type().equals(Field.Type.GRASS) &&
-						fields.get(new Position(i+1, j)).type().equals(Field.Type.GRASS) &&
-						fields.get(new Position(i+1, j+1)).type().equals(Field.Type.GRASS)) {
-					spawnable[i][j] = true;
-				}
-			}
-		}
-		var randomX = 0;
-		var randomY = 0;
-        do {
-            randomX = r.nextInt(1, size - 1);
-            randomY = r.nextInt(1, size - 1);
-        } while (!spawnable[randomX][randomY]);
-		new Unit(fields.get(new Position(randomX+1, randomY)), teams.get(WHITE), Unit.Type.TANK);
-		new Unit(fields.get(new Position(randomX, randomY+1)), teams.get(WHITE), Unit.Type.TANK);
-		new Unit(fields.get(new Position(randomX-1, randomY)), teams.get(WHITE), Unit.Type.INFANTRY);
-		new Unit(fields.get(new Position(randomX, randomY)), teams.get(WHITE), Unit.Type.SCOUT);
-		new Unit(fields.get(new Position(randomX, randomY-1)), teams.get(WHITE), Unit.Type.TANK);
+	public void placeRandomUnits() {
+		var spawnPlaces = new ArrayList<Tuplet<Integer, Integer>>();
+		spawnPlaces.add(new Tuplet(5, 5));
+		spawnPlaces.add(new Tuplet(mapSize - 6, mapSize - 6));
+		spawnPlaces.add(new Tuplet(mapSize - 6, 5));
+		spawnPlaces.add(new Tuplet(5, mapSize - 6));
+		spawnPlaces.add(new Tuplet(5, (mapSize / 2) + 5));
+		spawnPlaces.add(new Tuplet(mapSize - 5, mapSize / 2));
+		Collections.shuffle(spawnPlaces);
 
-		spawnable[randomX][randomY] = false;
+		new Unit(fields.get(new Position(spawnPlaces.get(0).a+1, spawnPlaces.get(0).b)), teams.get(WHITE), Unit.Type.TANK);
+		new Unit(fields.get(new Position(spawnPlaces.get(0).a, spawnPlaces.get(0).b+1)), teams.get(WHITE), Unit.Type.TANK);
+		new Unit(fields.get(new Position(spawnPlaces.get(0).a-1, spawnPlaces.get(0).b)), teams.get(WHITE), Unit.Type.INFANTRY);
+		new Unit(fields.get(new Position(spawnPlaces.get(0).a, spawnPlaces.get(0).b)), teams.get(WHITE), Unit.Type.SCOUT);
+		new Unit(fields.get(new Position(spawnPlaces.get(0).a, spawnPlaces.get(0).b-1)), teams.get(WHITE), Unit.Type.TANK);
 
-		do {
-			randomX = r.nextInt(1, size - 1);
-			randomY = r.nextInt(1, size - 1);
-		} while (!spawnable[randomX][randomY]);
-
-		new Unit(fields.get(new Position(randomX, randomY-1)), teams.get(RED), Unit.Type.TANK);
-		new Unit(fields.get(new Position(randomX+1, randomY)), teams.get(RED), Unit.Type.TANK);
-		new Unit(fields.get(new Position(randomX, randomY+1)), teams.get(RED), Unit.Type.TANK);
-		new Unit(fields.get(new Position(randomX-1, randomY)), teams.get(RED), Unit.Type.INFANTRY);
-		new Unit(fields.get(new Position(randomX, randomY)), teams.get(RED), Unit.Type.SCOUT);
+		new Unit(fields.get(new Position(spawnPlaces.get(1).a+1, spawnPlaces.get(1).b)), teams.get(RED), Unit.Type.TANK);
+		new Unit(fields.get(new Position(spawnPlaces.get(1).a, spawnPlaces.get(1).b+1)), teams.get(RED), Unit.Type.TANK);
+		new Unit(fields.get(new Position(spawnPlaces.get(1).a-1, spawnPlaces.get(1).b)), teams.get(RED), Unit.Type.INFANTRY);
+		new Unit(fields.get(new Position(spawnPlaces.get(1).a, spawnPlaces.get(1).b)), teams.get(RED), Unit.Type.SCOUT);
+		new Unit(fields.get(new Position(spawnPlaces.get(1).a, spawnPlaces.get(1).b-1)), teams.get(RED), Unit.Type.TANK);
 	}
 
 	public void placeDefaultControlPoints() {
