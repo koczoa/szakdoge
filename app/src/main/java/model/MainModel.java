@@ -76,7 +76,7 @@ public class MainModel {
 
 	public void placeDefaultControlPoints() {
 		//TODO: rework this
-		controlPoints.add(new ControlPoint(new Position(30, 30), 10, 4, this));
+		controlPoints.add(new ControlPoint(new Position(32, 32), 10, 4, this));
 		controlPoints.add(new ControlPoint(new Position(40, 20), 20, 2, this));
 		controlPoints.add(new ControlPoint(new Position(20, 40), 20, 2, this));
 
