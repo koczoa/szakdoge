@@ -3,7 +3,7 @@ import math
 import os
 import random
 import time
-from typing import Optional, Callable
+from typing import Optional, Callable, List
 from enum import Enum
 import matplotlib.pyplot as plt
 import numpy as np
@@ -39,7 +39,7 @@ def a_star_search(start: Field, getNeighbours: Callable[[Field], list[Field]], g
         if current == goal:
             break
         for next in getNeighbours(current):
-            new_cost = cost_so_far[current] + 1
+            new_cost = cost_so_far[current] + random.uniform(0.5, 1.5)
             if next not in cost_so_far or new_cost < cost_so_far[next]:
                 cost_so_far[next] = new_cost
                 priority = new_cost + heu(next, goal)
@@ -57,7 +57,8 @@ def a_star_search(start: Field, getNeighbours: Callable[[Field], list[Field]], g
     return path
 
 
-def bfs_search(start: Field, getNeighbours: Callable[[Field], list[Field]], goal: Callable[[Field], bool]) -> list[Field]:
+def bfs_search(start: Field, getNeighbours: Callable[[Field], list[Field]], goal: Callable[[Field], bool]) -> list[
+    Field]:
     frontier = PriorityQueue()
     frontier.put(start, 0)
     came_from: dict[Field, Optional[Field]] = {start: None}
@@ -67,7 +68,7 @@ def bfs_search(start: Field, getNeighbours: Callable[[Field], list[Field]], goal
         if goal(current):
             break
         for next in getNeighbours(current):
-            new_cost = cost_so_far[current] + 1
+            new_cost = cost_so_far[current] + random.uniform(0.5, 1.5)
             if next not in cost_so_far or new_cost < cost_so_far[next]:
                 cost_so_far[next] = new_cost
                 priority = new_cost + 0
@@ -213,9 +214,12 @@ class Team:
                      "target": {"x": closest_perimeter[1].pos.x, "y": closest_perimeter[1].pos.y}})
 
     def getNeighbours(self, fiq: Field) -> list[Field]:
-        return [self.terrainMemory[a][b] for (x, y) in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
-                if 0 <= (a := fiq.pos.x + x) < self.mapSize
-                if 0 <= (b := fiq.pos.y + y) < self.mapSize]
+        neighs = [self.terrainMemory[a][b] for (x, y) in
+                  [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
+                  if 0 <= (a := fiq.pos.x + x) < self.mapSize
+                  if 0 <= (b := fiq.pos.y + y) < self.mapSize]
+        random.shuffle(neighs)
+        return neighs
 
     def intel(self):
         for uv in self.seenUnits:
@@ -241,71 +245,121 @@ class Team:
         #         print(f"{str(c)} -> {c.score(self.name)}")
         #         print(f"{c.printStatus()}")
 
-    def autoEncoder(self, show: bool = False):
-        self.mapData = np.zeros((self.mapSize, self.mapSize), np.int32)
+    def autoEncoder(self):
+        self.mapData = np.full(shape=(self.mapSize, self.mapSize, 8), dtype=float, fill_value=0.0)
         for r in self.terrainMemory:
             for f in r:
                 if f is not None:
                     match f.typ:
                         case "GRASS":
-                            self.mapData[f.pos.x][f.pos.y] += 1
+                            self.mapData[f.pos.x][f.pos.y][0] = 0.25
                         case "WATER":
-                            self.mapData[f.pos.x][f.pos.y] += 2
+                            self.mapData[f.pos.x][f.pos.y][0] = 0.4
                         case "MARSH":
-                            self.mapData[f.pos.x][f.pos.y] += 3
+                            self.mapData[f.pos.x][f.pos.y][0] = 0.55
                         case "FOREST":
-                            self.mapData[f.pos.x][f.pos.y] += 4
+                            self.mapData[f.pos.x][f.pos.y][0] = 0.7
                         case "BUILDING":
-                            self.mapData[f.pos.x][f.pos.y] += 5
+                            self.mapData[f.pos.x][f.pos.y][0] = 0.85
+
+        for cp in self.seenControlPoints:
+            self.mapData[cp.pos.x][cp.pos.y][1] = 1
+
+        for u in self.seenUnits:
+            if u.team != self.name:
+                match u.typ:
+                    case "TANK":
+                        self.mapData[u.pos.x][u.pos.y][2] = u.health / self.tankDesc["maxHealth"]
+                        self.mapData[u.pos.x][u.pos.y][3] = 0
+                    case "INFANTRY":
+                        self.mapData[u.pos.x][u.pos.y][2] = u.health / self.infantryDesc["maxHealth"]
+                        self.mapData[u.pos.x][u.pos.y][3] = 0.5
+                    case "SCOUT":
+                        self.mapData[u.pos.x][u.pos.y][2] = u.health / self.scoutDesc["maxHealth"]
+                        self.mapData[u.pos.x][u.pos.y][3] = 1
+
+
+        for u in self.units.values():
+            match u.typ:
+                case "TANK":
+                    self.mapData[u.currentField.pos.x][u.currentField.pos.y][4] = u.health / self.tankDesc["maxHealth"]
+                    self.mapData[u.currentField.pos.x][u.currentField.pos.y][5] = 0
+                    self.mapData[u.currentField.pos.x][u.currentField.pos.y][6] = u.ammo / self.tankDesc["maxAmmo"]
+                    self.mapData[u.currentField.pos.x][u.currentField.pos.y][7] = u.fuel / self.tankDesc["maxFuel"]
+                case "INFANTRY":
+                    self.mapData[u.currentField.pos.x][u.currentField.pos.y][4] = u.health / self.infantryDesc["maxHealth"]
+                    self.mapData[u.currentField.pos.x][u.currentField.pos.y][5] = 0.5
+                    self.mapData[u.currentField.pos.x][u.currentField.pos.y][6] = u.ammo / self.infantryDesc["maxAmmo"]
+                    self.mapData[u.currentField.pos.x][u.currentField.pos.y][7] = u.fuel / self.infantryDesc["maxFuel"]
+                case "SCOUT":
+                    self.mapData[u.currentField.pos.x][u.currentField.pos.y][4] = u.health / self.scoutDesc["maxHealth"]
+                    self.mapData[u.currentField.pos.x][u.currentField.pos.y][5] = 1
+                    self.mapData[u.currentField.pos.x][u.currentField.pos.y][6] = 0
+                    self.mapData[u.currentField.pos.x][u.currentField.pos.y][7] = u.fuel / self.scoutDesc["maxFuel"]
+
+    def visualize(self):
+        self.visData = np.zeros((self.mapSize, self.mapSize), np.int32)
+        for r in self.terrainMemory:
+            for f in r:
+                if f is not None:
+                    match f.typ:
+                        case "GRASS":
+                            self.visData[f.pos.x][f.pos.y] += 1
+                        case "WATER":
+                            self.visData[f.pos.x][f.pos.y] += 2
+                        case "MARSH":
+                            self.visData[f.pos.x][f.pos.y] += 3
+                        case "FOREST":
+                            self.visData[f.pos.x][f.pos.y] += 4
+                        case "BUILDING":
+                            self.visData[f.pos.x][f.pos.y] += 5
 
         # for f in self.seenFields:
         #     match f.typ:
         #         case "GRASS":
-        #             mapData[f.pos.x][f.pos.y] += 1
+        #             visData[f.pos.x][f.pos.y] += 1
         #         case "WATER":
-        #             mapData[f.pos.x][f.pos.y] += 2
+        #             visData[f.pos.x][f.pos.y] += 2
         #         case "MARSH":
-        #             mapData[f.pos.x][f.pos.y] += 3
+        #             visData[f.pos.x][f.pos.y] += 3
         #         case "FOREST":
-        #             mapData[f.pos.x][f.pos.y] += 4
+        #             visData[f.pos.x][f.pos.y] += 4
         #         case "BUILDING":
-        #             mapData[f.pos.x][f.pos.y] += 5
+        #             visData[f.pos.x][f.pos.y] += 5
 
         # TODO: this could and SHOULD be optimised...
         for u in self.seenUnits:
             if u.team == self.name:
                 match u.typ:
                     case "TANK":
-                        self.mapData[u.pos.x][u.pos.y] += 106
+                        self.visData[u.pos.x][u.pos.y] += 6
                     case "INFANTRY":
-                        self.mapData[u.pos.x][u.pos.y] += 107
+                        self.visData[u.pos.x][u.pos.y] += 7
                     case "SCOUT":
-                        self.mapData[u.pos.x][u.pos.y] += 108
+                        self.visData[u.pos.x][u.pos.y] += 8
             else:
                 match u.typ:
                     case "TANK":
-                        self.mapData[u.pos.x][u.pos.y] += 199
+                        self.visData[u.pos.x][u.pos.y] += 9
                     case "INFANTRY":
-                        self.mapData[u.pos.x][u.pos.y] += 199
+                        self.visData[u.pos.x][u.pos.y] += 10
                     case "SCOUT":
-                        self.mapData[u.pos.x][u.pos.y] += 199
+                        self.visData[u.pos.x][u.pos.y] += 11
 
         for cp in self.seenControlPoints:
-            self.mapData[cp.pos.x][cp.pos.y] += 50
+            self.visData[cp.pos.x][cp.pos.y] += 12
 
-        if self.save:
-            plt.clf()
-            toPlt = np.transpose(self.mapData)
-            plt.title(self.name)
-            plt.imshow(toPlt, cmap='grey', interpolation='none', vmin=0, vmax=255)
-            plt.colorbar()
-            plt.draw()
-            plt.ioff()
-            plt.figure(1)
 
-            plt.savefig(f"{self.folderName}/{int(time.time()*1000)}.png")
-            if show and self.strategy != "dummy":
-                plt.show()
+        plt.clf()
+        toPlt = np.transpose(self.visData)
+        plt.title(self.name)
+        plt.imshow(toPlt, cmap="viridis", interpolation="none", vmin=0, vmax=27)
+        plt.colorbar()
+        plt.draw()
+        plt.ioff()
+        plt.figure(1)
+
+        plt.savefig(f"{self.folderName}/{int(time.time() * 1000)}.png")
 
     def dummyMove(self) -> None:
         for u in [u for u in self.units.values() if u.fuel > 0]:
@@ -322,6 +376,7 @@ class Team:
     """
     this method profiles the enemy team and returns a number between 0 and 1 to report it's health state
     """
+
     def teamProfiler(self, units: list[UnitView]) -> float:
         theoreticalMaxHealth = 0
         actualHealth = 0
@@ -343,7 +398,7 @@ class Team:
     """
     this method profiles a unit from the team and returns a number between 0 and 1 to report it's general state
     """
-    def unitProfiler(self, uv: UnitView) -> float:
+    def unitViewProfiler(self, uv: UnitView) -> float:
         maxHealth, damage, magic_offset = 0, 0, 0
         match uv.typ:
             case "TANK":
@@ -353,12 +408,14 @@ class Team:
             case "SCOUT":
                 maxHealth = self.scoutDesc["maxHealth"]
                 damage = self.scoutDesc["damage"]
-                magic_offset = 0
             case "INFANTRY":
                 maxHealth = self.infantryDesc["maxHealth"]
                 damage = self.infantryDesc["damage"]
                 magic_offset = 25
         return damage * (uv.health / maxHealth) + magic_offset
+
+    def unitProfiler(self, u: Unit) -> List[float]:
+        pass
 
     def scouting(self) -> None:
         # print("scouting")
@@ -376,7 +433,7 @@ class Team:
         # print("attacking")
         # an enemy unit is strongest when it could deal the most damage before the team kills it
         # strongest = enemies[0]  # this should be selected by the unitProfiler
-        strongest = max((uv for uv in enemies), key=lambda uv: self.unitProfiler(uv))
+        strongest = max((uv for uv in enemies), key=lambda uv: self.unitViewProfiler(uv))
         pos = {"x": strongest.pos.x, "y": strongest.pos.y}
         for u in [u for u in self.units.values() if u.typ != "SCOUT" and u.ammo > 0]:
             if u.currentField.pos.dist(strongest.pos) >= u.shootRange - 1:
@@ -403,6 +460,7 @@ class Team:
             return
         us = [u for u in self.seenUnits if u.team == self.name]
         them = [u for u in self.seenUnits if u.team != self.name]
+        self.autoEncoder()
         if self.teamProfiler(us) < 0.25:
             self.retreat()
             choice = 0
@@ -429,8 +487,11 @@ class Team:
         elif 0.34 <= a < 0.64:
             toHist = np.flip(toHist)
         self.history.append([choice] + toHist.tolist())
+        if self.save:
+            self.visualize()
 
     def doAction(self):
+        self.intel()
         if self.strategy == "dummy":
             self.dummyMove()
             self.dummyShoot()
@@ -439,4 +500,4 @@ class Team:
         return self.messageQueue
 
     def saveGame(self):
-        np.save(f"train_data/{int(time.time()*1000)}.npy",  np.array(self.history))
+        np.save(f"train_data_2/{int(time.time() * 1000)}.npy", np.array(self.history))
