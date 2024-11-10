@@ -51,7 +51,7 @@ def check_data(retreats, scouts, conquers, attacks):
 
 
 def load_data(retreats, scouts, conquers, attacks):
-    train_data_dir = "train_data"
+    train_data_dir = "train_data_3"
     all_files = os.listdir(train_data_dir)
     random.shuffle(all_files)
 
@@ -60,15 +60,17 @@ def load_data(retreats, scouts, conquers, attacks):
         data = np.load(full_path)
         data = list(data)
         for d in data:
+            print(f"d0: {d[0]}")
+            print(f"lend1: {len(d[1:])}")
             choice = d[0]
             if choice == 0:
-                retreats.append([d[0], d[1:]/255])
+                retreats.append([d[0], d[1:]])
             elif choice == 1:
-                scouts.append([d[0], d[1:]/255])
+                scouts.append([d[0], d[1:]])
             elif choice == 2:
-                conquers.append([d[0], d[1:]/255])
+                conquers.append([d[0], d[1:]])
             elif choice == 3:
-                attacks.append([d[0], d[1:]/255])
+                attacks.append([d[0], d[1:]])
     return retreats, scouts, conquers, attacks
 
 
@@ -86,11 +88,11 @@ def prepare():
     train_data = retreats + scouts + conquers + attacks
     print(f"train_data len: {len(train_data)}")
     random.shuffle(train_data)
-    test_size = 100
-    x_train = np.array([i[1] for i in train_data[:-test_size]]).reshape(-1, 60, 60, 1)
+    test_size = 1000
+    x_train = np.array([i[1] for i in train_data[:-test_size]]).reshape(-1, 64, 64, 8)
     y_train = np.array([i[0] for i in train_data[:-test_size]])
 
-    x_test = np.array([i[1] for i in train_data[-test_size:]]).reshape(-1, 60, 60, 1)
+    x_test = np.array([i[1] for i in train_data[-test_size:]]).reshape(-1, 64, 64, 8)
     y_test = np.array([i[0] for i in train_data[-test_size:]])
 
     # model.fit(x_train, y_train,
@@ -104,19 +106,30 @@ def prepare():
 
 
 def train(x_train, y_train, x_test, y_test):
-    encoder_input = keras.Input(shape=(60, 60, 1), name='img')
+    encoder_input = keras.Input(shape=(60, 60, 8), name='img')
     x = keras.layers.Flatten()(encoder_input)
+    x = keras.layers.Dense(32786, activation="relu")(x)
+    x = keras.layers.Dense(16384, activation="relu")(x)
+    x = keras.layers.Dense(8192, activation="relu")(x)
+    x = keras.layers.Dense(4096, activation="relu")(x)
+    x = keras.layers.Dense(2048, activation="relu")(x)
     x = keras.layers.Dense(1024, activation="relu")(x)
+    x = keras.layers.Dense(512, activation="relu")(x)
     x = keras.layers.Dense(256, activation="relu")(x)
-    encoder_output = keras.layers.Dense(64, activation="relu")(x)
+    encoder_output = keras.layers.Dense(256, activation="relu")(x)
 
     encoder = keras.Model(encoder_input, encoder_output, name='encoder')
 
-    decoder_input = keras.layers.Dense(64, activation="relu")(encoder_output)
+    decoder_input = keras.layers.Dense(256, activation="relu")(encoder_output)
     x = keras.layers.Dense(256, activation="relu")(decoder_input)
+    x = keras.layers.Dense(512, activation="relu")(x)
     x = keras.layers.Dense(1024, activation="relu")(x)
-    x = keras.layers.Dense(3600, activation="relu")(x)
-    decoder_output = keras.layers.Reshape((60, 60, 1))(x)
+    x = keras.layers.Dense(2048, activation="relu")(x)
+    x = keras.layers.Dense(4096, activation="relu")(x)
+    x = keras.layers.Dense(8192, activation="relu")(x)
+    x = keras.layers.Dense(16384, activation="relu")(x)
+    x = keras.layers.Dense(32786, activation="relu")(x)
+    decoder_output = keras.layers.Reshape((60, 60, 8))(x)
 
     opt = tf.keras.optimizers.Adam(learning_rate=0.001, decay=1e-6)
 
@@ -133,8 +146,8 @@ def use(x_test, y_test):
     model = keras.saving.load_model("models/AE.keras")
     name = "yiumyum"
     encoder = keras.saving.load_model("models/E.keras")
-    example = encoder.predict([x_test[0].reshape(-1, 60, 60, 1)])
-    ae_out = model.predict([x_test[0].reshape(-1, 60, 60, 1)])
+    example = encoder.predict([x_test[0].reshape(-1, 60, 60, 8)])
+    ae_out = model.predict([x_test[0].reshape(-1, 60, 60, 8)])
     print(example[0].shape)
     graph, (original, encoded, decoded) = plt.subplots(1, 3)
     original.imshow(x_test[0], cmap="gray", interpolation="none")
@@ -150,8 +163,8 @@ def use(x_test, y_test):
 
 def main():
     x_train, y_train, x_test, y_test = prepare()
-    # train(x_train, y_train, x_test, y_test)
-    use(x_test, y_test)
+    train(x_train, y_train, x_test, y_test)
+    # use(x_test, y_test)
 
 
 if __name__ == "__main__":

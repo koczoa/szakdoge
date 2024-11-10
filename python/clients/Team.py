@@ -124,7 +124,7 @@ class Team:
         self.tankDesc = json.loads(open("../../app/src/main/resources/descriptors/TANK.json").read())
         self.infantryDesc = json.loads(open("../../app/src/main/resources/descriptors/INFANTRY.json").read())
         self.history = []
-        self.mapData = np.zeros((self.mapSize, self.mapSize), np.int32)
+        self.mapData = np.full(shape=(self.mapSize, self.mapSize, 8), dtype=float, fill_value=0.0)
         self.save = save
 
     def __str__(self):
@@ -166,10 +166,11 @@ class Team:
 
     def moveUnitDummy(self, u: Unit):
         if u.fuel - u.consumption > 0:
-            choseOne = random.choice([n for n in self.getNeighbours(u.currentField)
-                                      if n.typ in u.steppables
-                                      if n.pos not in [uv.pos for uv in self.seenUnits]])
-            if choseOne is not None:
+            availables = [n for n in self.getNeighbours(u.currentField)
+                          if n.typ in u.steppables
+                          if n.pos not in [uv.pos for uv in self.seenUnits]]
+            if len(availables) != 0:
+                choseOne = random.choice(availables)
                 pos = {"x": choseOne.pos.x, "y": choseOne.pos.y}
             else:
                 pos = {"x": u.currentField.pos.x, "y": u.currentField.pos.y}
@@ -223,21 +224,25 @@ class Team:
 
     def intel(self):
         for uv in self.seenUnits:
-            x = math.floor(uv.pos.x / self.desiredPartSize)
-            y = math.floor(uv.pos.y / self.desiredPartSize)
+            x = math.floor(uv.pos.x / self.desiredPartSize) - 1
+            y = math.floor(uv.pos.y / self.desiredPartSize) - 1
+            # print(f"UV  x:{uv.pos.x}, y: {uv.pos.y}")
+            # print(f"x:{x}, y: {y}")
             self.mapParts[x][y].addUnit(uv)
             enemySize = len([u for u in self.seenUnits if u.team != self.name])
             if enemySize > self.maxEnemySize:
                 self.maxEnemySize = enemySize
 
         for cp in self.seenControlPoints:
-            x = math.floor(cp.pos.x / self.desiredPartSize)
-            y = math.floor(cp.pos.y / self.desiredPartSize)
+            x = math.floor(cp.pos.x / self.desiredPartSize) - 1
+            y = math.floor(cp.pos.y / self.desiredPartSize) - 1
             self.mapParts[x][y].addCp(cp)
 
         for f in self.seenFields:
-            x = math.floor(f.pos.x / self.desiredPartSize)
-            y = math.floor(f.pos.y / self.desiredPartSize)
+            x = math.floor(f.pos.x / self.desiredPartSize) - 1
+            y = math.floor(f.pos.y / self.desiredPartSize) - 1
+            # print(f"F  x:{f.pos.x}, y: {f.pos.y}")
+            # print(f"x:{x}, y: {y}")
             self.mapParts[x][y].addField(f)
 
         # for b in self.mapParts:
@@ -245,7 +250,7 @@ class Team:
         #         print(f"{str(c)} -> {c.score(self.name)}")
         #         print(f"{c.printStatus()}")
 
-    def autoEncoder(self):
+    def autoEncoder(self, them):
         self.mapData = np.full(shape=(self.mapSize, self.mapSize, 8), dtype=float, fill_value=0.0)
         for r in self.terrainMemory:
             for f in r:
@@ -265,19 +270,17 @@ class Team:
         for cp in self.seenControlPoints:
             self.mapData[cp.pos.x][cp.pos.y][1] = 1
 
-        for u in self.seenUnits:
-            if u.team != self.name:
-                match u.typ:
-                    case "TANK":
-                        self.mapData[u.pos.x][u.pos.y][2] = u.health / self.tankDesc["maxHealth"]
-                        self.mapData[u.pos.x][u.pos.y][3] = 0
-                    case "INFANTRY":
-                        self.mapData[u.pos.x][u.pos.y][2] = u.health / self.infantryDesc["maxHealth"]
-                        self.mapData[u.pos.x][u.pos.y][3] = 0.5
-                    case "SCOUT":
-                        self.mapData[u.pos.x][u.pos.y][2] = u.health / self.scoutDesc["maxHealth"]
-                        self.mapData[u.pos.x][u.pos.y][3] = 1
-
+        for u in them:
+            match u.typ:
+                case "TANK":
+                    self.mapData[u.pos.x][u.pos.y][2] = u.health / self.tankDesc["maxHealth"]
+                    self.mapData[u.pos.x][u.pos.y][3] = 0
+                case "INFANTRY":
+                    self.mapData[u.pos.x][u.pos.y][2] = u.health / self.infantryDesc["maxHealth"]
+                    self.mapData[u.pos.x][u.pos.y][3] = 0.5
+                case "SCOUT":
+                    self.mapData[u.pos.x][u.pos.y][2] = u.health / self.scoutDesc["maxHealth"]
+                    self.mapData[u.pos.x][u.pos.y][3] = 1
 
         for u in self.units.values():
             match u.typ:
@@ -287,7 +290,8 @@ class Team:
                     self.mapData[u.currentField.pos.x][u.currentField.pos.y][6] = u.ammo / self.tankDesc["maxAmmo"]
                     self.mapData[u.currentField.pos.x][u.currentField.pos.y][7] = u.fuel / self.tankDesc["maxFuel"]
                 case "INFANTRY":
-                    self.mapData[u.currentField.pos.x][u.currentField.pos.y][4] = u.health / self.infantryDesc["maxHealth"]
+                    self.mapData[u.currentField.pos.x][u.currentField.pos.y][4] = u.health / self.infantryDesc[
+                        "maxHealth"]
                     self.mapData[u.currentField.pos.x][u.currentField.pos.y][5] = 0.5
                     self.mapData[u.currentField.pos.x][u.currentField.pos.y][6] = u.ammo / self.infantryDesc["maxAmmo"]
                     self.mapData[u.currentField.pos.x][u.currentField.pos.y][7] = u.fuel / self.infantryDesc["maxFuel"]
@@ -298,21 +302,21 @@ class Team:
                     self.mapData[u.currentField.pos.x][u.currentField.pos.y][7] = u.fuel / self.scoutDesc["maxFuel"]
 
     def visualize(self):
-        self.visData = np.zeros((self.mapSize, self.mapSize), np.int32)
+        visData = np.zeros((self.mapSize, self.mapSize), np.int32)
         for r in self.terrainMemory:
             for f in r:
                 if f is not None:
                     match f.typ:
                         case "GRASS":
-                            self.visData[f.pos.x][f.pos.y] += 1
+                            visData[f.pos.x][f.pos.y] += 1
                         case "WATER":
-                            self.visData[f.pos.x][f.pos.y] += 2
+                            visData[f.pos.x][f.pos.y] += 2
                         case "MARSH":
-                            self.visData[f.pos.x][f.pos.y] += 3
+                            visData[f.pos.x][f.pos.y] += 3
                         case "FOREST":
-                            self.visData[f.pos.x][f.pos.y] += 4
+                            visData[f.pos.x][f.pos.y] += 4
                         case "BUILDING":
-                            self.visData[f.pos.x][f.pos.y] += 5
+                            visData[f.pos.x][f.pos.y] += 5
 
         # for f in self.seenFields:
         #     match f.typ:
@@ -332,26 +336,25 @@ class Team:
             if u.team == self.name:
                 match u.typ:
                     case "TANK":
-                        self.visData[u.pos.x][u.pos.y] += 6
+                        visData[u.pos.x][u.pos.y] += 6
                     case "INFANTRY":
-                        self.visData[u.pos.x][u.pos.y] += 7
+                        visData[u.pos.x][u.pos.y] += 7
                     case "SCOUT":
-                        self.visData[u.pos.x][u.pos.y] += 8
+                        visData[u.pos.x][u.pos.y] += 8
             else:
                 match u.typ:
                     case "TANK":
-                        self.visData[u.pos.x][u.pos.y] += 9
+                        visData[u.pos.x][u.pos.y] += 9
                     case "INFANTRY":
-                        self.visData[u.pos.x][u.pos.y] += 10
+                        visData[u.pos.x][u.pos.y] += 10
                     case "SCOUT":
-                        self.visData[u.pos.x][u.pos.y] += 11
+                        visData[u.pos.x][u.pos.y] += 11
 
         for cp in self.seenControlPoints:
-            self.visData[cp.pos.x][cp.pos.y] += 12
-
+            visData[cp.pos.x][cp.pos.y] += 12
 
         plt.clf()
-        toPlt = np.transpose(self.visData)
+        toPlt = np.transpose(visData)
         plt.title(self.name)
         plt.imshow(toPlt, cmap="viridis", interpolation="none", vmin=0, vmax=27)
         plt.colorbar()
@@ -398,6 +401,7 @@ class Team:
     """
     this method profiles a unit from the team and returns a number between 0 and 1 to report it's general state
     """
+
     def unitViewProfiler(self, uv: UnitView) -> float:
         maxHealth, damage, magic_offset = 0, 0, 0
         match uv.typ:
@@ -460,7 +464,7 @@ class Team:
             return
         us = [u for u in self.seenUnits if u.team == self.name]
         them = [u for u in self.seenUnits if u.team != self.name]
-        self.autoEncoder()
+        self.autoEncoder(them)
         if self.teamProfiler(us) < 0.25:
             self.retreat()
             choice = 0
@@ -500,4 +504,5 @@ class Team:
         return self.messageQueue
 
     def saveGame(self):
-        np.save(f"train_data_2/{int(time.time() * 1000)}.npy", np.array(self.history))
+        np.save(f"train_data_3/{int(time.time() * 1000)}.npy", np.array(self.history))
+        print(np.array(self.history).shape)
