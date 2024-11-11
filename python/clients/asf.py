@@ -49,7 +49,7 @@ def main():
             ctr += 1
             # print(f"----------------inter:{ctr}----------------")
             handleMessage(msg)
-        if ctr == 200:
+        if ctr == 100:
             print("max inter reached")
             break
         # sleep(0.1)

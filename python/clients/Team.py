@@ -439,14 +439,14 @@ class Team:
         # strongest = enemies[0]  # this should be selected by the unitProfiler
         strongest = max((uv for uv in enemies), key=lambda uv: self.unitViewProfiler(uv))
         pos = {"x": strongest.pos.x, "y": strongest.pos.y}
-        for u in [u for u in self.units.values() if u.typ != "SCOUT" and u.ammo > 0]:
+        for u in [u for u in self.units.values() if u.typ != "SCOUT"]:
             if u.currentField.pos.dist(strongest.pos) >= u.shootRange - 1:
                 try:
                     self.moveUnitAStar(u, random.choice([f for f in mp.fields if f.typ in u.steppables]))
                 except IndexError:
                     self.moveUnitDummy(u)
             else:
-                if u.ammo > 1:
+                if u.ammo > 0:
                     self.messageQueue.append({"id": u.uid, "action": "shoot", "target": pos})
 
     def retreat(self):

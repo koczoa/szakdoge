@@ -5,35 +5,22 @@ import numpy as np
 import os
 import random
 
+mapSize = 32
+mapDepth = 8
+train_data_dir = "train_data_3"
 
-# model = Sequential()
-#
-# model.add(Conv2D(32, (3, 3), padding='same', input_shape=(176, 200, 3), activation='relu'))
-# model.add(Conv2D(32, (3, 3), activation='relu'))
-# model.add(MaxPooling2D(pool_size=(2, 2)))
-# model.add(Dropout(0.2))
-#
-# model.add(Conv2D(64, (3, 3), padding='same', activation='relu'))
-# model.add(Conv2D(64, (3, 3), activation='relu'))
-# model.add(MaxPooling2D(pool_size=(2, 2)))
-# model.add(Dropout(0.2))
-#
-# model.add(Conv2D(128, (3, 3), padding='same', activation='relu'))
-# model.add(Conv2D(128, (3, 3), activation='relu'))
-# model.add(MaxPooling2D(pool_size=(2, 2)))
-# model.add(Dropout(0.2))
-#
-# model.add(Flatten())
-# model.add(Dense(512, activation='relu'))
-# model.add(Dropout(0.5))
-# model.add(Dense(4, activation='softmax'))
-#
-# learning_rate = 0.0001
-# opt = keras.optimizers.Adam(lr=learning_rate, decay=1e-6)
-#
-# model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
-#
-# tensorboard = TensorBoard(log_dir="logs/STAGE1")
+
+gpus = tf.config.list_physical_devices("GPU")
+if gpus:
+    try:
+        tf.config.experimental.set_memory_growth(gpus[0], True)
+        tf.config.set_logical_device_configuration(
+            gpus[0],
+            [tf.config.LogicalDeviceConfiguration(memory_limit=3072)])
+        logical_gpus = tf.config.list_logical_devices("GPU")
+        print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+    except RuntimeError as e:
+        print(e)
 
 
 def check_data(retreats, scouts, conquers, attacks):
@@ -51,7 +38,6 @@ def check_data(retreats, scouts, conquers, attacks):
 
 
 def load_data(retreats, scouts, conquers, attacks):
-    train_data_dir = "train_data_3"
     all_files = os.listdir(train_data_dir)
     random.shuffle(all_files)
 
@@ -89,27 +75,18 @@ def prepare():
     print(f"train_data len: {len(train_data)}")
     random.shuffle(train_data)
     test_size = 1000
-    x_train = np.array([i[1] for i in train_data[:-test_size]]).reshape(-1, 64, 64, 8)
+    x_train = np.array([i[1] for i in train_data[:-test_size]]).reshape(-1, mapSize, mapSize, mapDepth)
     y_train = np.array([i[0] for i in train_data[:-test_size]])
 
-    x_test = np.array([i[1] for i in train_data[-test_size:]]).reshape(-1, 64, 64, 8)
+    x_test = np.array([i[1] for i in train_data[-test_size:]]).reshape(-1, mapSize, mapSize, mapDepth)
     y_test = np.array([i[0] for i in train_data[-test_size:]])
 
-    # model.fit(x_train, y_train,
-    #           batch_size=batch_size,
-    #           validation_data=(x_test, y_test),
-    #           shuffle=True,
-    #           verbose=1, callbacks=[tensorboard])
-    #
-    # model.save("BasicCNN-{}-epochs-{}-LR-STAGE1".format(hm_epochs, learning_rate))
     return x_train, y_train, x_test, y_test
 
 
 def train(x_train, y_train, x_test, y_test):
-    encoder_input = keras.Input(shape=(60, 60, 8), name='img')
+    encoder_input = keras.Input(shape=(mapSize, mapSize, mapDepth), name='img')
     x = keras.layers.Flatten()(encoder_input)
-    x = keras.layers.Dense(32786, activation="relu")(x)
-    x = keras.layers.Dense(16384, activation="relu")(x)
     x = keras.layers.Dense(8192, activation="relu")(x)
     x = keras.layers.Dense(4096, activation="relu")(x)
     x = keras.layers.Dense(2048, activation="relu")(x)
@@ -127,9 +104,7 @@ def train(x_train, y_train, x_test, y_test):
     x = keras.layers.Dense(2048, activation="relu")(x)
     x = keras.layers.Dense(4096, activation="relu")(x)
     x = keras.layers.Dense(8192, activation="relu")(x)
-    x = keras.layers.Dense(16384, activation="relu")(x)
-    x = keras.layers.Dense(32786, activation="relu")(x)
-    decoder_output = keras.layers.Reshape((60, 60, 8))(x)
+    decoder_output = keras.layers.Reshape((mapSize, mapSize, mapDepth))(x)
 
     opt = tf.keras.optimizers.Adam(learning_rate=0.001, decay=1e-6)
 
@@ -146,19 +121,48 @@ def use(x_test, y_test):
     model = keras.saving.load_model("models/AE.keras")
     name = "yiumyum"
     encoder = keras.saving.load_model("models/E.keras")
-    example = encoder.predict([x_test[0].reshape(-1, 60, 60, 8)])
-    ae_out = model.predict([x_test[0].reshape(-1, 60, 60, 8)])
+    example = encoder.predict([x_test[0].reshape(-1, mapSize, mapSize, 8)])
+    ae_out = model.predict([x_test[0].reshape(-1, mapSize, mapSize, 8)])
     print(example[0].shape)
-    graph, (original, encoded, decoded) = plt.subplots(1, 3)
-    original.imshow(x_test[0], cmap="gray", interpolation="none")
-    original.set_title("AE/original")
-    encoded.imshow(example[0].reshape((8, 8)), cmap="gray", interpolation="none")
-    encoded.set_title("E/encoded")
-    decoded.imshow(ae_out[0], cmap="gray", interpolation="none")
-    decoded.set_title("AE/decoded")
-    graph.tight_layout()
-    plt.suptitle(name)
-    plt.savefig(f"models/{name}.png")
+    # graph, (original, encoded, decoded) = plt.subplots(1, 3)
+    # original.imshow(x_test[0], cmap="gray", interpolation="none")
+    # original.set_title("AE/original")
+    # encoded.imshow(example[0].reshape((8, 8)), cmap="gray", interpolation="none")
+    # encoded.set_title("E/encoded")
+    # decoded.imshow(ae_out[0], cmap="gray", interpolation="none")
+    # decoded.set_title("AE/decoded")
+    # graph.tight_layout()
+    # plt.suptitle(name)
+    # plt.savefig(f"models/{name}.png")
+
+    # test = x_test[0]
+    test = model.predict([x_test[0].reshape(-1, mapSize, mapSize, 8)])[0]
+    print(test.shape)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    x = np.linspace(0, 31, 32).astype(int)
+    y = np.linspace(0, 31, 32).astype(int)
+    z = np.linspace(0, 7, 8).astype(int)
+    c = test
+
+    x = []
+    y = []
+    z = []
+    c = []
+    for i in range(0, 32):
+        for j in range(0, 32):
+            for k in range(0, 8):
+                if test[i][j][k] != 0:
+                    x.append(i)
+                    y.append(j)
+                    z.append(k)
+                    c.append(test[i][j][k])
+
+    img = ax.scatter(x, y, z, c=c, cmap=plt.hot())
+    fig.colorbar(img)
+    plt.show()
 
 
 def main():
