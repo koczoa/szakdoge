@@ -15,7 +15,7 @@ public class SimplexMapGeneratorStrategy implements MapGeneratorStrategy {
 		for (int i = 0; i < mapSize; i++) {
 			for (int j = 0; j < mapSize; j++) {
 				var temPos = new Position(i, j);
-				var noiseProb = SimplexNoise.noise(i / 20.0, j / 20.0, 25);
+				var noiseProb = SimplexNoise.noise(i / 20.0, j / 10.0, 25);
 				if (-1 < noiseProb && noiseProb <= 0.2) {
 					fields.put(temPos, new Field(temPos, Field.Type.GRASS));
 				} else if (0.2 < noiseProb && noiseProb <= 0.4) {

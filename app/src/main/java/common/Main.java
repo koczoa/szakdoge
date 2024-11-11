@@ -9,8 +9,8 @@ import java.io.IOException;
 
 public class Main {
 	public static void main(String[] args) throws IOException {
-		MainModel mm = new MainModel(60);
-		// mm.placeDefaultUnits();
+		MainModel mm = new MainModel(32);
+//		mm.placeDefaultUnits();
 		mm.placeRandomUnits();
 		mm.placeDefaultControlPoints();
 		MainCommunicator mc = new MainCommunicator(mm);

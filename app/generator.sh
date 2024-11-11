@@ -1,8 +1,9 @@
 #!/bin/sh
+set -e
 date +"%T"
- for i in `seq 1 500`;
+ for i in `seq 1 5`;
 do
-	java -jar build/libs/app.jar & 
+	java -jar build/libs/app.jar graf & 
 	cd ../python/clients
 #	echo "cpd"
 	source clients/bin/activate

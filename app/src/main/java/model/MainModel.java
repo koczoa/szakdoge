@@ -1,6 +1,7 @@
 package model;
 
 import common.*;
+import common.map_generation.AllGreenMapGeneratorStrategy;
 import common.map_generation.MapGeneratorStrategy;
 import common.map_generation.SimplexMapGeneratorStrategy;
 import util.Tuplet;
@@ -32,6 +33,7 @@ public class MainModel {
 
 	public MainModel(int size) {
 		this(size, new SimplexMapGeneratorStrategy());
+//		this(size, new AllGreenMapGeneratorStrategy());
 	}
 
 	public void placeDefaultUnits() {
@@ -53,12 +55,12 @@ public class MainModel {
 
 	public void placeRandomUnits() {
 		var spawnPlaces = new ArrayList<Tuplet<Integer, Integer>>();
-		spawnPlaces.add(new Tuplet(5, 5));
-		spawnPlaces.add(new Tuplet(mapSize - 6, mapSize - 6));
-		spawnPlaces.add(new Tuplet(mapSize - 6, 5));
-		spawnPlaces.add(new Tuplet(5, mapSize - 6));
-		spawnPlaces.add(new Tuplet(5, (mapSize / 2) + 5));
-		spawnPlaces.add(new Tuplet(mapSize - 5, mapSize / 2));
+		spawnPlaces.add(new Tuplet(2, 2));
+		spawnPlaces.add(new Tuplet(mapSize - 3, mapSize - 3));
+		spawnPlaces.add(new Tuplet(mapSize - 5, 4));
+		spawnPlaces.add(new Tuplet(2, mapSize - 2));
+		spawnPlaces.add(new Tuplet(2, (mapSize / 2) - 4));
+		spawnPlaces.add(new Tuplet(mapSize - 3, mapSize / 2));
 		Collections.shuffle(spawnPlaces);
 
 		new Unit(fields.get(new Position(spawnPlaces.get(0).a+1, spawnPlaces.get(0).b)), teams.get(WHITE), Unit.Type.TANK);
@@ -76,10 +78,12 @@ public class MainModel {
 
 	public void placeDefaultControlPoints() {
 		//TODO: rework this
-		controlPoints.add(new ControlPoint(new Position(32, 32), 10, 4, this));
-		controlPoints.add(new ControlPoint(new Position(40, 20), 20, 2, this));
-		controlPoints.add(new ControlPoint(new Position(20, 40), 20, 2, this));
-
+//		controlPoints.add(new ControlPoint(new Position(32, 32), 10, 4, this));
+//		controlPoints.add(new ControlPoint(new Position(40, 20), 20, 2, this));
+//		controlPoints.add(new ControlPoint(new Position(20, 40), 20, 2, this));
+// 		controlPoints.add(new ControlPoint(new Position(mapSize/2, mapSize/2), 10, 4, this));
+		controlPoints.add(new ControlPoint(new Position(11, 21), 20, 2, this));
+		controlPoints.add(new ControlPoint(new Position(21, 11), 20, 2, this));
 	}
 
 	public void addListener(MainModelListener mml) {
