@@ -167,7 +167,6 @@ def main():
         np.save("AE/x_test.npy", x_test)
         np.save("AE/y_test.npy", y_test)
         encoder = train_autoEncoder(x_train)
-        encoder = keras.saving.load_model("models/E.keras")
         e_x_train, e_x_test = prepare_lstm(encoder, x_train, x_test)
         np.save("LSTM/e_x_train.npy", e_x_train)
         np.save("LSTM/e_x_test.npy", e_x_test)
