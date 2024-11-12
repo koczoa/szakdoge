@@ -16,9 +16,6 @@ def setupMessageParser(payload):
 def commMessageParser(payload):
     t.addUnits(payload["units"])
     t.updateWorld(payload["map"])
-    t.intel()
-    if t.strategy != "dummy":
-        t.autoEncoder()
     w.send(t.doAction())
     t.clear()
 
@@ -52,7 +49,7 @@ def main():
             ctr += 1
             # print(f"----------------inter:{ctr}----------------")
             handleMessage(msg)
-        if ctr == 200:
+        if ctr == 100:
             print("max inter reached")
             break
         # sleep(0.1)
