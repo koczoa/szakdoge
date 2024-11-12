@@ -1,6 +1,6 @@
 import keras
 import matplotlib.pyplot as plt
-from train_ai import mapSize, mapDepth, prepare
+from train_ai import mapSize, mapDepth
 
 
 def use_autoEncoder(x_test):

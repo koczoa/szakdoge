@@ -5,6 +5,7 @@ import tensorflow as tf
 import keras
 import numpy as np
 import os
+import sys
 import random
 
 mapSize = 32
@@ -85,6 +86,7 @@ def prepare_autoEncoder():
 
     return x_train, y_train, x_test, y_test
 
+
 def prepare_lstm(encoder, x_train, x_test):
     encoded_trains = []
     encoded_tests = []
@@ -92,9 +94,8 @@ def prepare_lstm(encoder, x_train, x_test):
         encoded_trains.append(encoder.predict(train.reshape(-1, mapSize, mapSize, mapDepth))[0])
     for test in x_test:
         encoded_tests.append(encoder.predict(test.reshape(-1, mapSize, mapSize, mapDepth))[0])
-        
-    return encoded_trains, encoded_tests
 
+    return encoded_trains, encoded_tests
 
 
 def train_autoEncoder(x_train):
@@ -130,8 +131,9 @@ def train_autoEncoder(x_train):
     encoder.save("models/E.keras")
     return encoder
 
+
 def train_LSTM(x_train, y_train):
-    lstm_input = keras.Input(shape=(1, 256))
+    lstm_input = keras.Input(shape=(256, 1))
     x = keras.layers.LSTM(units=256, activation="relu", return_sequences=True)(lstm_input)
     x = keras.layers.LSTM(units=256, activation="relu", return_sequences=True)(x)
     x = keras.layers.Dropout(0.1)(x)
@@ -140,7 +142,7 @@ def train_LSTM(x_train, y_train):
     x = keras.layers.LSTM(units=256, activation="relu", return_sequences=True)(x)
     x = keras.layers.Dropout(0.1)(x)
     x = keras.layers.LSTM(units=256, activation="relu", return_sequences=True)(x)
-    lstm_output = keras.layers.Dense(units=4)(x)
+    lstm_output = keras.layers.Dense(units=1)(x)
 
     lstm = keras.Model(lstm_input, lstm_output, name="lstm")
 
@@ -151,16 +153,26 @@ def train_LSTM(x_train, y_train):
     lstm.save("models/LSTM.keras")
 
 
-
+from_save = True
 
 
 def main():
     x_train, y_train, x_test, y_test = prepare_autoEncoder()
-    # encoder = train_autoEncoder(x_train)
-    encoder = keras.saving.load_model("models/E.keras")
-    e_x_train, e_x_test = prepare_lstm(encoder, x_train, x_test)
-    train_LSTM(e_x_train, y_train)
+    if from_save:
+        e_x_train = np.load("LSTM/e_x_train.npy")
+        y_train = np.load("AE/y_train.npy")
+    else:
+        np.save("AE/x_train.npy", x_train)
+        np.save("AE/y_train.npy", y_train)
+        np.save("AE/x_test.npy", x_test)
+        np.save("AE/y_test.npy", y_test)
+        encoder = train_autoEncoder(x_train)
+        encoder = keras.saving.load_model("models/E.keras")
+        e_x_train, e_x_test = prepare_lstm(encoder, x_train, x_test)
+        np.save("LSTM/e_x_train.npy", e_x_train)
+        np.save("LSTM/e_x_test.npy", e_x_test)
 
+    train_LSTM(e_x_train, y_train)
 
 
 if __name__ == "__main__":
