@@ -5,12 +5,11 @@ import tensorflow as tf
 import keras
 import numpy as np
 import os
-import sys
 import random
 
 mapSize = 32
 mapDepth = 8
-train_data_dir = "train_data_3"
+train_data_dir = "train_data_4"
 
 
 gpus = tf.config.list_physical_devices("GPU")
@@ -19,7 +18,7 @@ if gpus:
         tf.config.experimental.set_memory_growth(gpus[0], True)
         tf.config.set_logical_device_configuration(
             gpus[0],
-            [tf.config.LogicalDeviceConfiguration(memory_limit=4096)])
+            [tf.config.LogicalDeviceConfiguration(memory_limit=6144)])
         logical_gpus = tf.config.list_logical_devices("GPU")
         print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
     except RuntimeError as e:
@@ -49,17 +48,15 @@ def load_data(retreats, scouts, conquers, attacks):
         data = np.load(full_path)
         data = list(data)
         for d in data:
-            # print(f"d0: {d[0]}")
-            # print(f"lend1: {len(d[1:])}")
-            choice = d[0]
+            choice = np.argmax(d[0:4])
             if choice == 0:
-                retreats.append([d[0], d[1:]])
+                retreats.append([d[0:4], d[4:]])
             elif choice == 1:
-                scouts.append([d[0], d[1:]])
+                scouts.append([d[0:4], d[4:]])
             elif choice == 2:
-                conquers.append([d[0], d[1:]])
+                conquers.append([d[0:4], d[4:]])
             elif choice == 3:
-                attacks.append([d[0], d[1:]])
+                attacks.append([d[0:4], d[4:]])
     return retreats, scouts, conquers, attacks
 
 
@@ -73,10 +70,10 @@ def shuffle_data(retreats, scouts, conquers, attacks):
 
 def prepare_autoEncoder():
     retreats, scouts, conquers, attacks = load_data([], [], [], [])
-    retreats, scouts, conquers, attacks = shuffle_data(retreats, scouts, conquers, attacks)
+    # retreats, scouts, conquers, attacks = shuffle_data(retreats, scouts, conquers, attacks)
     train_data = retreats + scouts + conquers + attacks
     print(f"train_data len: {len(train_data)}")
-    random.shuffle(train_data)
+    # random.shuffle(train_data)
     test_size = math.floor(len(train_data) * 0.1)
     x_train = np.array([i[1] for i in train_data[:-test_size]]).reshape(-1, mapSize, mapSize, mapDepth)
     y_train = np.array([i[0] for i in train_data[:-test_size]])
@@ -126,7 +123,7 @@ def train_autoEncoder(x_train):
 
     autoencoder.summary()
     autoencoder.compile(opt, loss="mse")
-    autoencoder.fit(x_train, x_train, epochs=20, batch_size=8, validation_split=0.20)
+    autoencoder.fit(x_train, x_train, epochs=2, batch_size=8, validation_split=0.20)
     autoencoder.save("models/AE.keras")
     encoder.save("models/E.keras")
     return encoder
@@ -142,18 +139,18 @@ def train_LSTM(x_train, y_train):
     x = keras.layers.LSTM(units=256, activation="relu", return_sequences=True)(x)
     x = keras.layers.Dropout(0.1)(x)
     x = keras.layers.LSTM(units=256, activation="relu", return_sequences=True)(x)
-    lstm_output = keras.layers.Dense(units=1)(x)
+    lstm_output = keras.layers.Dense(units=4)(x)
 
     lstm = keras.Model(lstm_input, lstm_output, name="lstm")
 
     lstm.summary()
     lstm.compile(optimizer="rmsprop", loss="mse")
-    lstm.fit(x_train, y_train, epochs=10, batch_size=8)
+    lstm.fit(x_train, y_train, epochs=2, batch_size=8)
 
     lstm.save("models/LSTM.keras")
 
 
-from_save = True
+from_save = False
 
 
 def main():
@@ -171,7 +168,7 @@ def main():
         np.save("LSTM/e_x_train.npy", e_x_train)
         np.save("LSTM/e_x_test.npy", e_x_test)
 
-    train_LSTM(e_x_train, y_train)
+    # train_LSTM(e_x_train, y_train)
 
 
 if __name__ == "__main__":

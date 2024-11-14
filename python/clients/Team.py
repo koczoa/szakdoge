@@ -484,13 +484,9 @@ class Team:
                     selectedMapPart = [mp for mps in self.mapParts for mp in mps if len(mp.white_uvs) > 0][0]
                 self.attack(selectedMapPart, them)
                 choice = 3
-        toHist = self.mapData.flatten()
-        a = random.random()
-        if a < 0.34:
-            toHist = np.transpose(toHist)
-        elif 0.34 <= a < 0.64:
-            toHist = np.flip(toHist)
-        self.history.append([choice] + toHist.tolist())
+        y = np.zeros(4)
+        y[choice] = 1
+        self.history.append([y, self.mapData])
         if self.save:
             self.visualize()
 
@@ -504,5 +500,13 @@ class Team:
         return self.messageQueue
 
     def saveGame(self):
-        np.save(f"train_data_3/{int(time.time() * 1000)}.npy", np.array(self.history))
-        print(np.array(self.history).shape)
+        a = random.random()
+        if a < 0.5:
+            self.mapData.transpose((1, 0, 2))
+        a = random.random()
+        if a < 0.5:
+            self.mapData = np.flip(self.mapData, 0)
+        a = random.random()
+        if a < 0.5:
+            self.mapData = np.flip(self.mapData, 1)
+        np.save(f"train_data_4/{int(time.time() * 1000)}.npy", np.array([a.tolist() + b.flatten().tolist() for [a, b] in self.history]))

@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 date +"%T"
- for i in `seq 1 1000`;
+ for i in `seq 1 1500`;
 do
 	java -jar build/libs/app.jar & 
 	cd ../python/clients
