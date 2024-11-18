@@ -7,6 +7,9 @@ import numpy as np
 import os
 import random
 
+from keras import Sequential, Input
+from keras.src.layers import LSTM, Dropout, Dense
+
 mapSize = 32
 mapDepth = 8
 train_data_dir = "train_data_4"
@@ -129,35 +132,86 @@ def train_autoEncoder(x_train):
     return encoder
 
 
-def train_LSTM(x_train, y_train):
-    lstm_input = keras.Input(shape=(256, 1))
-    x = keras.layers.LSTM(units=256, activation="relu", return_sequences=True)(lstm_input)
-    x = keras.layers.LSTM(units=256, activation="relu", return_sequences=True)(x)
-    x = keras.layers.Dropout(0.1)(x)
-    x = keras.layers.LSTM(units=256, activation="relu", return_sequences=True)(x)
-    x = keras.layers.Dropout(0.1)(x)
-    x = keras.layers.LSTM(units=256, activation="relu", return_sequences=True)(x)
-    x = keras.layers.Dropout(0.1)(x)
-    x = keras.layers.LSTM(units=256, activation="relu", return_sequences=True)(x)
-    lstm_output = keras.layers.Dense(units=4)(x)
+def train_LSTM(x_train, y_train, x_test, y_test):
+    # print(f"xtrain shape: {x_train.shape}")
+    # print(f"ytrain shape: {y_train.shape}")
+    #
+    # print(f"xtrain[0] shape: {x_train[0].shape}")
+    # print(f"ytrain[0] shape: {y_train[0].shape}")
 
-    lstm = keras.Model(lstm_input, lstm_output, name="lstm")
+    # print(f"xtrain[0]: {x_train[0]}")
+    # print(f"ytrain[0]: {y_train[0]}")
+
+    x_train = x_train.reshape(-1, 256, 1)
+    x_test = x_test.reshape(-1, 256, 1)
+
+    lstm = Sequential()
+    lstm.add(Input(shape=(x_train.shape[1:])))
+
+    lstm.add(LSTM(units=256, return_sequences=True))
+    lstm.add(Dropout(0.2))
+    lstm.add(LSTM(units=256, return_sequences=True))
+    lstm.add(Dropout(0.2))
+    lstm.add(LSTM(units=256))
+    lstm.add(Dropout(0.2))
+
+    lstm.add(Dense(units=4, activation="softmax"))
 
     lstm.summary()
-    lstm.compile(optimizer="rmsprop", loss="mse")
-    lstm.fit(x_train, y_train, epochs=2, batch_size=8)
+    lstm.compile(loss="categorical_crossentropy", optimizer="rmsprop", metrics=["accuracy"])
+
+    lstm.fit(x_train, y_train, epochs=1, validation_data=(x_test, y_test))
 
     lstm.save("models/LSTM.keras")
 
 
-from_save = False
+    # lstm_input = keras.Input(shape=(256, 1))
+    # # x = keras.layers.Flatten()(lstm_input)
+    # x = keras.layers.LSTM(units=4, activation="relu", return_sequences=False, input_shape=(-1, 256, 1))
+    # x = keras.layers.LSTM(units=4, activation="relu", return_sequences=True)(lstm_input)
+    # x = keras.layers.Dropout(0.1)(x)
+    # x = keras.layers.LSTM(units=4, activation="relu", return_sequences=True)(x)
+    # x = keras.layers.Dropout(0.1)(x)
+    # x = keras.layers.LSTM(units=4, activation="relu", return_sequences=True)(x)
+    # x = keras.layers.Dropout(0.1)(x)
+    # x = keras.layers.LSTM(units=4, activation="relu", return_sequences=True)(x)
+    # lstm_output = keras.layers.Dense(units=4, activation="softmax")(x)
+    #
+    # lstm = keras.Model(lstm_input, lstm_output, name="lstm")
+    #
+    # lstm.summary()
+    # lstm.compile(optimizer="rmsprop", loss="mse")
+    #
+    # # lstm.fit(x_train, y_train, epochs=2, batch_size=8)
+    # # lstm.fit(x_train, y_train, epochs=2, batch_size=8, validation_data=(x_test, y_test))
+    #
+    # lstm.save("models/LSTM.keras")
+
+    # model = Sequential()
+    # model.add(Input(shape=(x_train.shape[1:])))
+    # model.add(LSTM(256, activation='relu', return_sequences=True))
+    # model.add(Dropout(0.2))
+    #
+    # model.add(LSTM(256, activation='relu'))
+    # model.add(Dropout(0.1))
+    #
+    # model.add(Dense(4, activation='softmax'))
+    # model.summary()
+    # model.compile(loss='categorical_crossentropy', optimizer="rmsprop", metrics=['accuracy'])
+    #
+    # model.fit(x_train, y_train, epochs=3, validation_data=(x_test, y_test))
+
+
+from_save = True
 
 
 def main():
     x_train, y_train, x_test, y_test = prepare_autoEncoder()
     if from_save:
         e_x_train = np.load("LSTM/e_x_train.npy")
+        e_x_test = np.load("LSTM/e_x_test.npy")
         y_train = np.load("AE/y_train.npy")
+        y_test = np.load("AE/y_test.npy")
     else:
         np.save("AE/x_train.npy", x_train)
         np.save("AE/y_train.npy", y_train)
@@ -168,7 +222,8 @@ def main():
         np.save("LSTM/e_x_train.npy", e_x_train)
         np.save("LSTM/e_x_test.npy", e_x_test)
 
-    # train_LSTM(e_x_train, y_train)
+
+    train_LSTM(e_x_train, y_train, e_x_test, y_test)
 
 
 if __name__ == "__main__":
